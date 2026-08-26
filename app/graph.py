@@ -159,7 +159,9 @@ def a_star(start: str, goal: str) -> dict[str, Any]:
         raise ValueError(f"Unknown goal node: {goal}")
 
     start_h = heuristic(start, goal)
-    start_cost = {"g": 0.0, "h": round(start_h, 1), "f": round(start_h, 1)}
+    # Preserve full precision in the API trace. The frontend formats these
+    # values to one decimal place for display without weakening QA arithmetic.
+    start_cost = {"g": 0.0, "h": start_h, "f": start_h}
 
     if start == goal:
         return {
@@ -211,9 +213,9 @@ def a_star(start: str, goal: str) -> dict[str, Any]:
                         "from": current,
                         "to": neighbor,
                         "weight": edge_cost,
-                        "g": round(tentative_g, 1),
-                        "h": round(h_cost, 1),
-                        "f": round(f_cost, 1),
+                        "g": tentative_g,
+                        "h": h_cost,
+                        "f": f_cost,
                     }
                 )
 

@@ -1,24 +1,25 @@
 "use strict";
 
 /**
- * GraphCrypt Flat Design Color Tokens
+ * GraphCrypt dark interface color tokens.
  */
 const COLORS = {
-    fallback: "#F8FAFC",
-    fallbackGrid: "rgba(203, 213, 225, 0.4)",
-    edge: "#94A3B8",
+    fallback: "#E9EDF3",
+    fallbackGrid: "rgba(71, 85, 105, 0.12)",
+    edgeOutline: "rgba(255, 255, 255, 0.92)",
+    edge: "#536277",
     node: "#FFFFFF",
-    nodeBorder: "#2563EB",
-    nodeText: "#1E293B",
-    explored: "#8B5CF6",
-    start: "#16A34A",
-    goal: "#DC2626",
-    path: "#2563EB",
+    nodeBorder: "#6857D9",
+    nodeText: "#172033",
+    explored: "#0891B2",
+    start: "#0F9F8E",
+    goal: "#E54862",
+    path: "#6857D9",
     white: "#FFFFFF",
-    dark: "#0F172A",
-    distanceBackground: "#FFFFFF",
-    distanceBorder: "#CBD5E1",
-    distanceText: "#0F172A",
+    dark: "#080C14",
+    distanceBackground: "rgba(255, 255, 255, 0.94)",
+    distanceBorder: "#AAB5C4",
+    distanceText: "#172033",
 };
 
 const STEPS = 14;
@@ -142,11 +143,22 @@ function drawEdge(edge, color, width, progress = 1) {
     const endX = x1 + (x2 - x1) * progress;
     const endY = y1 + (y2 - y1) * progress;
 
+    const scale = drawingScale();
+
+    // A light casing keeps every connection readable over street names and map detail.
+    context.beginPath();
+    context.moveTo(x1, y1);
+    context.lineTo(endX, endY);
+    context.strokeStyle = COLORS.edgeOutline;
+    context.lineWidth = (width + 2.4) * scale;
+    context.lineCap = "round";
+    context.stroke();
+
     context.beginPath();
     context.moveTo(x1, y1);
     context.lineTo(endX, endY);
     context.strokeStyle = color;
-    context.lineWidth = width * drawingScale();
+    context.lineWidth = width * scale;
     context.lineCap = "round";
     context.stroke();
 }
@@ -183,7 +195,7 @@ function drawNode(label) {
         context.strokeStyle = COLORS.nodeBorder;
         context.lineWidth = 2.5 * scale;
     } else {
-        context.strokeStyle = "#FFFFFF";
+        context.strokeStyle = "#F7FAFF";
         context.lineWidth = 2 * scale;
     }
     context.stroke();
@@ -191,7 +203,7 @@ function drawNode(label) {
     // Node Text
     const isSolidNode = color !== COLORS.node;
     context.fillStyle = isSolidNode ? COLORS.white : COLORS.nodeText;
-    context.font = `bold ${13 * scale}px "Roboto", Arial, sans-serif`;
+    context.font = `700 ${13 * scale}px "Manrope", Arial, sans-serif`;
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText(label, x, y + 0.5 * scale);
@@ -225,7 +237,7 @@ function drawWeightLabel(edge) {
     const y = (y1 + y2) / 2 + (dx * offset) / length;
     const text = edge.weight.toFixed(1);
 
-    context.font = `bold ${11 * scale}px "Roboto Mono", Consolas, monospace`;
+    context.font = `600 ${11 * scale}px "IBM Plex Mono", Consolas, monospace`;
     const width = context.measureText(text).width + 10 * scale;
     const height = 18 * scale;
     roundedRectangle(x - width / 2, y - height / 2, width, height, 4 * scale);
@@ -244,7 +256,12 @@ function drawWeightLabel(edge) {
 function drawScene() {
     context.clearRect(0, 0, canvas.width, canvas.height);
     if (mapLoaded) {
+        context.save();
+        context.filter = "saturate(0.58) brightness(0.93) contrast(0.96)";
         context.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
+        context.restore();
+        context.fillStyle = "rgba(244, 247, 251, 0.08)";
+        context.fillRect(0, 0, canvas.width, canvas.height);
     } else {
         drawFallbackBackground();
     }
@@ -672,6 +689,14 @@ function populateNodeSelectors(labels) {
     goalSelect.value = "T";
 }
 
+function updateRangeFill() {
+    const minimum = Number(cipherKeyInput.min) || 0;
+    const maximum = Number(cipherKeyInput.max) || 25;
+    const current = Number(cipherKeyInput.value);
+    const progress = ((current - minimum) / (maximum - minimum)) * 100;
+    cipherKeyInput.style.setProperty("--range-progress", `${progress}%`);
+}
+
 async function loadGraph() {
     try {
         const response = await fetch("/api/graph");
@@ -782,6 +807,7 @@ hideDistanceButton.addEventListener("click", () => {
 
 cipherKeyInput.addEventListener("input", () => {
     const shift = cipherKeyInput.value;
+    updateRangeFill();
     cipherKeyValue.textContent = shift;
     if (cryptoActiveShift) cryptoActiveShift.textContent = shift;
     if (currentResult) {
@@ -837,4 +863,5 @@ canvas.addEventListener("click", (event) => {
 });
 
 // Initialization
+updateRangeFill();
 loadGraph();

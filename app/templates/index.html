@@ -1,21 +1,31 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#2563EB">
-    <meta name="description" content="GraphCrypt — Academic Weighted A* Pathfinding and Single-Pass Caesar Cipher Visualizer on the Argentina Network.">
-    <title>GraphCrypt — A* Pathfinding + Caesar Cipher</title>
+    <meta name="theme-color" content="#080C14">
+    <meta name="color-scheme" content="dark">
+    <meta name="description" content="Explore weighted A* pathfinding and secure each computed route with a single-pass Caesar cipher in GraphCrypt.">
+    <meta property="og:title" content="GraphCrypt — Route intelligence, securely encoded">
+    <meta property="og:description" content="Weighted A* pathfinding and single-pass Caesar cipher visualization in one professional workspace.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="{{ url_for('static', filename='images/graphcrypt-og.png', _external=True) }}">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="GraphCrypt — Route intelligence, securely encoded">
+    <meta name="twitter:description" content="Weighted A* pathfinding and single-pass Caesar cipher visualization in one professional workspace.">
+    <meta name="twitter:image" content="{{ url_for('static', filename='images/graphcrypt-og.png', _external=True) }}">
+    <title>GraphCrypt — Route Intelligence & Encryption</title>
     
-    <!-- Google Fonts: Roboto & Roboto Mono -->
+    <!-- Google Fonts: Manrope & IBM Plex Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Roboto:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body class="app">
-    <!-- Top Compact Header (50px) -->
+    <a class="skip-link" href="#mainDashboard">Skip to workspace</a>
+    <!-- Application header -->
     <header class="app-header">
         <div class="header-container">
             <div class="brand">
@@ -33,7 +43,7 @@
                         <h1 class="brand-title">GraphCrypt</h1>
                         <span class="brand-badge">WAYCIPHER</span>
                     </div>
-                    <p class="brand-subtitle">A* Pathfinding + Caesar Cipher</p>
+                    <p class="brand-subtitle">Route intelligence &amp; encryption</p>
                 </div>
             </div>
 
@@ -56,7 +66,7 @@
                 </div>
                 <div class="system-status-badge">
                     <span class="status-indicator-dot"></span>
-                    <span id="systemEngineStatus">System Active</span>
+                    <span id="systemEngineStatus">Engine online</span>
                 </div>
             </div>
         </div>
@@ -71,7 +81,7 @@
                 <div class="card-header">
                     <div class="header-title-wrap">
                         <h2 class="card-title">Argentina Route Network</h2>
-                        <span class="card-meta-pill">27 Nodes &bull; 40 Edges</span>
+                        <span class="card-meta-pill">27 nodes &bull; 40 edges</span>
                     </div>
                     <div class="card-actions">
                         <span id="mapStatus" class="badge badge-neutral">Loading map…</span>
@@ -129,7 +139,7 @@
             <aside class="flat-card controls-card" aria-label="Route Configuration Controls">
                 <div class="card-header">
                     <div class="header-title-wrap">
-                        <h2 class="card-title">Route Controls</h2>
+                        <h2 class="card-title">Route Configuration</h2>
                     </div>
                     <span id="runStatus" class="badge badge-primary" aria-live="polite">Ready</span>
                 </div>
@@ -199,7 +209,7 @@
                     <div class="info-callout">
                         <div class="callout-icon" aria-hidden="true">ℹ</div>
                         <div class="callout-text">
-                            <strong>A* Optimality:</strong> Search runs on original graph weights $f(n)=g(n)+h(n)$. Caesar cipher shift is decoupled and applied post-search.
+                            <strong>Guaranteed optimality.</strong> A* uses the original graph weights; the Caesar shift is applied only after the route is resolved.
                         </div>
                     </div>
                 </form>
@@ -212,7 +222,7 @@
                 <article class="flat-card result-card" id="routeResultCard">
                     <div class="card-header">
                         <div class="header-title-wrap">
-                            <h2 class="card-title">Shortest Route Result</h2>
+                            <h2 class="card-title">Computed Route</h2>
                         </div>
                         <span id="routeResultStatusBadge" class="badge badge-neutral">● Ready</span>
                     </div>
@@ -246,7 +256,7 @@
                 <article class="flat-card encryption-card" id="encryptionCard">
                     <div class="card-header">
                         <div class="header-title-wrap">
-                            <h2 class="card-title">Encrypted Route</h2>
+                            <h2 class="card-title">Cipher Output</h2>
                             <span class="meta-tag compact-tag">
                                 Shift: <strong id="cryptoActiveShift">3</strong>
                             </span>
@@ -290,7 +300,7 @@
             <article class="flat-card log-card computation-card">
                 <div class="card-header">
                     <div class="header-title-wrap">
-                        <h2 class="card-title">A* Computation Log</h2>
+                        <h2 class="card-title">A* Search Trace</h2>
                         <span class="card-meta-pill">f(n) = g(n) + h(n)</span>
                     </div>
                     <div class="view-mode-tabs" role="tablist" aria-label="Log View Selection">
