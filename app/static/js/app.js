@@ -32,28 +32,27 @@ const canvas = document.querySelector("#graphCanvas");
 const context = canvas.getContext("2d");
 const startSelect = document.querySelector("#startNode");
 const goalSelect = document.querySelector("#goalNode");
-const cipherKeyInput = document.querySelector("#cipherKey");
-const cipherKeyValue = document.querySelector("#cipherKeyValue");
 const runButton = document.querySelector("#runButton");
 const resetButton = document.querySelector("#resetButton");
 const showDistanceButton = document.querySelector("#showDistanceButton");
 const hideDistanceButton = document.querySelector("#hideDistanceButton");
-const downloadButton = document.querySelector("#downloadButton");
-const copyCiphertextButton = document.querySelector("#copyCiphertextButton");
+const downloadRouteButton = document.querySelector("#downloadRouteButton");
 const algorithmLog = document.querySelector("#algorithmLog");
-const encryptedExport = document.querySelector("#encryptedExport");
-const decryptedVerificationBox = document.querySelector("#decryptedVerificationBox");
-const encryptionStatus = document.querySelector("#encryptionStatus");
-const cryptoActiveShift = document.querySelector("#cryptoActiveShift");
 const runStatus = document.querySelector("#runStatus");
-const mapStatus = document.querySelector("#mapStatus");
+const systemEngineStatus = document.querySelector("#systemEngineStatus");
 
 // Result card elements
 const routeResultStatusBadge = document.querySelector("#routeResultStatusBadge");
 const routeMetricDistance = document.querySelector("#routeMetricDistance");
 const routeMetricNodes = document.querySelector("#routeMetricNodes");
+const routeMetricVisited = document.querySelector("#routeMetricVisited");
 const routeMetricStatus = document.querySelector("#routeMetricStatus");
 const routeSequenceDisplay = document.querySelector("#routeSequenceDisplay");
+const routeVisitedNodesDisplay = document.querySelector("#routeVisitedNodesDisplay");
+const routeSerializedOutput = document.querySelector("#routeSerializedOutput");
+const routeExportStatus = document.querySelector("#routeExportStatus");
+const mapCipherKey = document.querySelector("#mapCipherKey");
+const mapCipherKeyValue = document.querySelector("#mapCipherKeyValue");
 
 // Tab controls for computation log
 const tabTableView = document.querySelector("#tabTableView");
@@ -61,6 +60,40 @@ const tabRawLogView = document.querySelector("#tabRawLogView");
 const tableViewContainer = document.querySelector("#tableViewContainer");
 const rawLogViewContainer = document.querySelector("#rawLogViewContainer");
 const computationTableBody = document.querySelector("#computationTableBody");
+
+// Main page and Cipher subsection tabs
+const mapPageTab = document.querySelector("#mapPageTab");
+const cipherPageTab = document.querySelector("#cipherPageTab");
+const mapPagePanel = document.querySelector("#mapPagePanel");
+const cipherPagePanel = document.querySelector("#cipherPagePanel");
+const encryptTab = document.querySelector("#encryptTab");
+const decryptTab = document.querySelector("#decryptTab");
+const encryptPanel = document.querySelector("#encryptPanel");
+const decryptPanel = document.querySelector("#decryptPanel");
+
+// Encrypt workflow controls
+const encryptFileInput = document.querySelector("#encryptFileInput");
+const encryptFileName = document.querySelector("#encryptFileName");
+const encryptCipherKey = document.querySelector("#encryptCipherKey");
+const encryptCipherKeyValue = document.querySelector("#encryptCipherKeyValue");
+const encryptButton = document.querySelector("#encryptButton");
+const encryptOutput = document.querySelector("#encryptOutput");
+const encryptError = document.querySelector("#encryptError");
+const encryptStatus = document.querySelector("#encryptStatus");
+const copyCiphertextButton = document.querySelector("#copyCiphertextButton");
+const downloadEncryptedButton = document.querySelector("#downloadEncryptedButton");
+
+// Decrypt workflow controls
+const decryptFileInput = document.querySelector("#decryptFileInput");
+const decryptFileName = document.querySelector("#decryptFileName");
+const decryptCipherKey = document.querySelector("#decryptCipherKey");
+const decryptCipherKeyValue = document.querySelector("#decryptCipherKeyValue");
+const decryptButton = document.querySelector("#decryptButton");
+const decryptOutput = document.querySelector("#decryptOutput");
+const decryptError = document.querySelector("#decryptError");
+const decryptStatus = document.querySelector("#decryptStatus");
+const copyDecryptedButton = document.querySelector("#copyDecryptedButton");
+const downloadDecryptedButton = document.querySelector("#downloadDecryptedButton");
 
 // State
 let graph = null;
@@ -77,23 +110,24 @@ let exploredNodes = new Set();
 let finalPathNodes = new Set();
 let activeSegment = null;
 
+const cipherState = {
+    encrypt: { file: null, result: null, operation: 0, busy: false, downloadBusy: false },
+    decrypt: { file: null, result: null, operation: 0, busy: false, downloadBusy: false },
+};
+let routeDownloadBusy = false;
+let mapCiphertextResult = null;
+let mapEncryptionOperation = 0;
+let mapEncryptionBusy = false;
+
 // Map image loading
 const mapImage = new Image();
 mapImage.src = "/static/images/argentina_map.png";
 mapImage.addEventListener("load", () => {
     mapLoaded = true;
-    if (mapStatus) {
-        mapStatus.textContent = "● Map Online";
-        mapStatus.className = "badge badge-success";
-    }
     drawScene();
 });
 mapImage.addEventListener("error", () => {
     mapLoaded = false;
-    if (mapStatus) {
-        mapStatus.textContent = "Fallback Grid";
-        mapStatus.className = "badge badge-neutral";
-    }
     drawScene();
 });
 
@@ -110,10 +144,17 @@ function drawingScale() {
 }
 
 function setBusy(isBusy) {
-    runButton.disabled = isBusy;
+    runButton.disabled = isBusy || !graph;
     startSelect.disabled = isBusy;
     goalSelect.disabled = isBusy;
-    cipherKeyInput.disabled = isBusy;
+    if (mapCipherKey) mapCipherKey.disabled = isBusy || mapEncryptionBusy || !graph;
+}
+
+function setMapEncryptionBusy(isBusy) {
+    mapEncryptionBusy = isBusy;
+    if (mapCipherKey) {
+        mapCipherKey.disabled = isBusy || Boolean(startSelect?.disabled) || !graph;
+    }
 }
 
 function drawFallbackBackground() {
@@ -309,24 +350,9 @@ function clearRouteState() {
 function clearResults() {
     currentResult = null;
     currentRequest = null;
-    
-    // Encrypted Export
-    if (encryptedExport) {
-        encryptedExport.textContent = "Run a path first to serialize and encrypt the route.";
-    }
-    if (decryptedVerificationBox) {
-        decryptedVerificationBox.textContent = "Awaiting A* execution…";
-    }
-    if (encryptionStatus) {
-        encryptionStatus.textContent = "🔒 Protected";
-        encryptionStatus.className = "badge badge-neutral";
-    }
-    if (downloadButton) {
-        downloadButton.disabled = true;
-    }
-    if (copyCiphertextButton) {
-        copyCiphertextButton.disabled = true;
-    }
+    mapEncryptionOperation += 1;
+    mapCiphertextResult = null;
+    mapEncryptionBusy = false;
 
     // Shortest Route Card
     if (routeResultStatusBadge) {
@@ -335,9 +361,18 @@ function clearResults() {
     }
     if (routeMetricDistance) routeMetricDistance.textContent = "—";
     if (routeMetricNodes) routeMetricNodes.textContent = "—";
+    if (routeMetricVisited) routeMetricVisited.textContent = "—";
     if (routeMetricStatus) routeMetricStatus.textContent = "Awaiting Search";
     if (routeSequenceDisplay) {
         routeSequenceDisplay.innerHTML = '<span class="placeholder-text">Run A* to compute the optimal shortest path.</span>';
+    }
+    if (routeVisitedNodesDisplay) routeVisitedNodesDisplay.textContent = "Awaiting search";
+    if (routeSerializedOutput) {
+        routeSerializedOutput.textContent = "Run A* to encrypt the route with the selected Caesar shift.";
+    }
+    setStatus(routeExportStatus, "Not available", "neutral");
+    if (downloadRouteButton) {
+        downloadRouteButton.disabled = true;
     }
 
     // Table view
@@ -432,16 +467,21 @@ async function animateEdge(edge, color, width, token) {
     return token === animationToken;
 }
 
-function renderRouteResults(result) {
+async function renderRouteResults(result, token = animationToken) {
     const start = startSelect.value;
     const goal = goalSelect.value;
     const totalCost = result.total_cost !== null ? result.total_cost.toFixed(1) : "N/A";
     const pathNodes = result.path;
+    const visitedNodes = Array.isArray(result.visited_nodes) ? result.visited_nodes : [];
 
     // Metrics
     if (routeMetricDistance) routeMetricDistance.textContent = totalCost;
     if (routeMetricNodes) routeMetricNodes.textContent = String(pathNodes.length);
+    if (routeMetricVisited) routeMetricVisited.textContent = String(visitedNodes.length);
     if (routeMetricStatus) routeMetricStatus.textContent = "Shortest Path Confirmed";
+    if (routeVisitedNodesDisplay) {
+        routeVisitedNodesDisplay.textContent = visitedNodes.length ? visitedNodes.join(" → ") : "None";
+    }
     
     if (routeResultStatusBadge) {
         routeResultStatusBadge.textContent = "● Shortest Path Found";
@@ -467,27 +507,11 @@ function renderRouteResults(result) {
             }
         });
     }
-
-    // Encrypted Export & Verification
-    const shift = result.shift ?? result.cipher_key;
-    if (cryptoActiveShift) cryptoActiveShift.textContent = shift;
-    
-    if (encryptedExport) {
-        encryptedExport.textContent = result.ciphertext;
+    if (routeSerializedOutput) {
+        routeSerializedOutput.textContent = "Encrypting route with the selected Caesar shift...";
     }
-    if (decryptedVerificationBox) {
-        decryptedVerificationBox.textContent = `Path: ${result.path.join(" → ")}\nWeights: [${result.edge_weights.map(w => w.toFixed(1)).join(", ")}]\nTotal: ${totalCost} (Shift: ${shift})`;
-    }
-    if (encryptionStatus) {
-        encryptionStatus.textContent = "🔓 Encrypted & Verified";
-        encryptionStatus.className = "badge badge-success";
-    }
-    if (downloadButton) {
-        downloadButton.disabled = false;
-    }
-    if (copyCiphertextButton) {
-        copyCiphertextButton.disabled = false;
-    }
+    if (downloadRouteButton) downloadRouteButton.disabled = true;
+    await refreshMapEncryption(result, token);
 }
 
 async function animateResult(result, token) {
@@ -537,6 +561,9 @@ async function animateResult(result, token) {
     appendLog("Goal reached. Optimal shortest path confirmed.");
     appendLog(`Shortest path: ${result.path.join(" → ")}`);
     appendLog(`Total cost: ${result.total_cost.toFixed(1)}`);
+    if (Array.isArray(result.visited_nodes)) {
+        appendLog(`Visited nodes (${result.visited_nodes.length}): ${result.visited_nodes.join(" → ")}`);
+    }
     if (runStatus) {
         runStatus.textContent = "Drawing Route";
         runStatus.className = "badge badge-primary";
@@ -558,12 +585,8 @@ async function animateResult(result, token) {
         return;
     }
 
-    const shift = result.shift ?? result.cipher_key;
-    appendLog("--- WAYCIPHER Cryptography Execution ---");
     appendLog(`Serialized Route: ${result.serialized_route}`);
-    appendLog(`Caesar Encrypt (Shift ${shift}): ${result.ciphertext}`);
-    appendLog(`Round-Trip Verified: ${result.serialized_route}`);
-    appendLog(`Ready for download: route_${start}_${goal}.txt`);
+    appendLog("Applying the selected Caesar shift to the serialized route.");
 
     // Add summary row to table
     addTableRow({
@@ -577,7 +600,10 @@ async function animateResult(result, token) {
         isOptimal: true,
     });
 
-    renderRouteResults(result);
+    await renderRouteResults(result, token);
+    if (token !== animationToken) {
+        return;
+    }
     setBusy(false);
     if (runStatus) {
         runStatus.textContent = "Complete";
@@ -585,11 +611,11 @@ async function animateResult(result, token) {
     }
 }
 
-async function requestWorkflow(start, goal, shift) {
+async function requestAStar(start, goal) {
     const response = await fetch("/api/astar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ start, goal, shift: shift, cipher_key: shift }),
+        body: JSON.stringify({ start, goal }),
     });
     const result = await response.json();
     if (!response.ok) {
@@ -607,12 +633,11 @@ async function runAStar() {
     const token = animationToken;
     const start = startSelect.value;
     const goal = goalSelect.value;
-    const shift = Number(cipherKeyInput.value);
 
     setBusy(true);
     beginLog();
     appendLog("Starting weighted A* search.");
-    appendLog(`Start: ${start} | Goal: ${goal} | Caesar Shift: ${shift}`);
+    appendLog(`Start: ${start} | Goal: ${goal}`);
     
     if (runStatus) {
         runStatus.textContent = "Searching...";
@@ -624,9 +649,12 @@ async function runAStar() {
     }
 
     try {
-        const result = await requestWorkflow(start, goal, shift);
+        const result = await requestAStar(start, goal);
         if (token !== animationToken) {
             return;
+        }
+        if (!Array.isArray(result.path) || !result.path.length || result.total_cost === null) {
+            throw new Error(`No route exists between start node ${start} and goal node ${goal}.`);
         }
         currentResult = result;
         currentRequest = { start, goal };
@@ -642,41 +670,326 @@ async function runAStar() {
                 routeResultStatusBadge.textContent = "● Search Error";
                 routeResultStatusBadge.className = "badge badge-neutral";
             }
+            if (routeMetricStatus) routeMetricStatus.textContent = error.message;
+            if (routeVisitedNodesDisplay) routeVisitedNodesDisplay.textContent = "Search failed";
             setBusy(false);
         }
     }
 }
 
-async function refreshEncryption() {
-    if (!currentResult || !currentRequest) {
+async function postJson(url, body) {
+    const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+    });
+
+    let payload = null;
+    try {
+        payload = await response.json();
+    } catch (_error) {
+        // A non-JSON response is converted into the same clear workflow error.
+    }
+    if (!response.ok) {
+        throw new Error(payload?.error || "The server could not process this file.");
+    }
+    return payload;
+}
+
+async function refreshMapEncryption(result, token = animationToken) {
+    let shift;
+    try {
+        shift = validateCipherShift(mapCipherKey);
+    } catch (error) {
+        mapCiphertextResult = null;
+        if (routeSerializedOutput) routeSerializedOutput.textContent = `Encryption error: ${error.message}`;
+        setStatus(routeExportStatus, "Invalid shift", "error");
+        return false;
+    }
+
+    const operation = ++mapEncryptionOperation;
+    mapCiphertextResult = null;
+    if (downloadRouteButton) downloadRouteButton.disabled = true;
+    setMapEncryptionBusy(true);
+    setStatus(routeExportStatus, `Encrypting (shift ${shift})...`, "primary");
+
+    try {
+        const start = currentRequest?.start || startSelect.value;
+        const goal = currentRequest?.goal || goalSelect.value;
+        const encrypted = await postJson("/api/encrypt", {
+            plaintext: result.serialized_route,
+            shift,
+            filename: `route_${start}_${goal}.txt`,
+        });
+
+        if (operation !== mapEncryptionOperation || token !== animationToken) {
+            return false;
+        }
+
+        const samePath = Array.isArray(encrypted.path)
+            && encrypted.path.join("|") === result.path.join("|");
+        const sameCost = Number(encrypted.total_cost) === Number(result.total_cost);
+        if (!samePath || !sameCost) {
+            throw new Error("Caesar encryption unexpectedly modified the optimal route.");
+        }
+
+        mapCiphertextResult = encrypted;
+        if (routeSerializedOutput) {
+            routeSerializedOutput.textContent = `Ciphertext:\n${encrypted.ciphertext}`;
+        }
+        setStatus(routeExportStatus, `Encrypted (shift ${shift})`, "success");
+        if (downloadRouteButton) downloadRouteButton.disabled = false;
+        appendLog(`Caesar encryption complete (shift ${shift}).`);
+        appendLog(`Encrypted route ready for download: route_${start}_${goal}.txt`);
+        return true;
+    } catch (error) {
+        if (operation !== mapEncryptionOperation || token !== animationToken) {
+            return false;
+        }
+        mapCiphertextResult = null;
+        if (routeSerializedOutput) routeSerializedOutput.textContent = `Encryption error: ${error.message}`;
+        setStatus(routeExportStatus, "Encryption failed", "error");
+        appendLog(`ENCRYPTION ERROR: ${error.message}`);
+        return false;
+    } finally {
+        if (operation === mapEncryptionOperation) {
+            setMapEncryptionBusy(false);
+        }
+    }
+}
+
+function validateCipherShift(input) {
+    const rawValue = String(input?.value ?? "").trim();
+    if (!/^\d+$/.test(rawValue)) {
+        throw new Error("Caesar shift must be a whole number from 0 to 25.");
+    }
+    const shift = Number(rawValue);
+    if (!Number.isInteger(shift) || shift < 0 || shift > 25) {
+        throw new Error("Caesar shift must be between 0 and 25.");
+    }
+    return shift;
+}
+
+function setStatus(element, text, state = "neutral") {
+    if (!element) return;
+    element.textContent = text;
+    element.className = `badge badge-${state}`;
+    element.dataset.state = state;
+}
+
+function setError(element, message = "") {
+    if (!element) return;
+    element.textContent = message;
+    element.hidden = !message;
+}
+
+function updateRangeFill(input, valueDisplay) {
+    if (!input) return;
+    const minimum = Number(input.min) || 0;
+    const maximum = Number(input.max) || 25;
+    const current = Number(input.value);
+    const progress = ((current - minimum) / (maximum - minimum)) * 100;
+    input.style.setProperty("--range-progress", `${progress}%`);
+    if (valueDisplay) valueDisplay.textContent = input.value;
+}
+
+function resetEncryptResult({ preserveError = false } = {}) {
+    cipherState.encrypt.result = null;
+    if (encryptOutput) encryptOutput.textContent = "Ciphertext will appear here after you press Encrypt.";
+    if (copyCiphertextButton) copyCiphertextButton.disabled = true;
+    if (downloadEncryptedButton) downloadEncryptedButton.disabled = true;
+    if (!preserveError) setError(encryptError);
+}
+
+function resetDecryptResult({ preserveError = false } = {}) {
+    cipherState.decrypt.result = null;
+    if (decryptOutput) decryptOutput.textContent = "The restored route will appear here after you press Decrypt.";
+    if (copyDecryptedButton) copyDecryptedButton.disabled = true;
+    if (downloadDecryptedButton) downloadDecryptedButton.disabled = true;
+    if (!preserveError) setError(decryptError);
+}
+
+function setCipherBusy(kind, isBusy) {
+    const encrypting = kind === "encrypt";
+    const fileInput = encrypting ? encryptFileInput : decryptFileInput;
+    const keyInput = encrypting ? encryptCipherKey : decryptCipherKey;
+    const actionButton = encrypting ? encryptButton : decryptButton;
+    cipherState[kind].busy = isBusy;
+    if (fileInput) fileInput.disabled = isBusy;
+    if (keyInput) keyInput.disabled = isBusy;
+    if (actionButton) {
+        actionButton.disabled = isBusy || !cipherState[kind].file;
+        actionButton.classList.toggle("is-loading", isBusy);
+        actionButton.setAttribute("aria-busy", String(isBusy));
+    }
+}
+
+function isTextFile(file) {
+    return Boolean(file && /\.txt$/i.test(file.name));
+}
+
+function selectCipherFile(kind) {
+    const encrypting = kind === "encrypt";
+    const input = encrypting ? encryptFileInput : decryptFileInput;
+    const filename = encrypting ? encryptFileName : decryptFileName;
+    const errorBox = encrypting ? encryptError : decryptError;
+    const status = encrypting ? encryptStatus : decryptStatus;
+    const actionButton = encrypting ? encryptButton : decryptButton;
+    const state = cipherState[kind];
+    const uploadZone = input?.closest(".file-upload-zone");
+
+    state.operation += 1;
+    state.file = null;
+    if (encrypting) resetEncryptResult();
+    else resetDecryptResult();
+
+    const file = input?.files?.[0] || null;
+    if (!file) {
+        if (filename) {
+            filename.textContent = "No file selected";
+            filename.classList.add("is-empty");
+            filename.dataset.empty = "true";
+        }
+        uploadZone?.classList.remove("has-file", "is-selected");
+        if (actionButton) actionButton.disabled = true;
+        setStatus(status, "Awaiting file", "neutral");
         return;
     }
 
-    const shift = Number(cipherKeyInput.value);
-    downloadButton.disabled = true;
-    if (copyCiphertextButton) copyCiphertextButton.disabled = true;
-    if (encryptionStatus) {
-        encryptionStatus.textContent = "Encrypting…";
-        encryptionStatus.className = "badge badge-neutral";
+    if (!isTextFile(file)) {
+        if (filename) {
+            filename.textContent = `${file.name} — unsupported`;
+            filename.classList.remove("is-empty");
+            filename.dataset.empty = "false";
+        }
+        uploadZone?.classList.remove("has-file", "is-selected");
+        if (input) input.value = "";
+        if (actionButton) actionButton.disabled = true;
+        setError(errorBox, "Invalid file type. Select a .txt file.");
+        setStatus(status, "Invalid file", "error");
+        return;
     }
-    
+
+    state.file = file;
+    if (filename) {
+        filename.textContent = file.name;
+        filename.classList.remove("is-empty");
+        filename.dataset.empty = "false";
+    }
+    uploadZone?.classList.add("has-file", "is-selected");
+    // Clear the native input after capturing the File so choosing the same file
+    // again still emits a change event. The workflow keeps its own File state.
+    if (input) input.value = "";
+    if (actionButton) actionButton.disabled = false;
+    setError(errorBox);
+    setStatus(status, encrypting ? "Ready to encrypt" : "Ready to decrypt", "primary");
+}
+
+async function runEncrypt() {
+    const state = cipherState.encrypt;
+    if (state.busy) return;
+    if (!state.file) {
+        setError(encryptError, "Select a route .txt file before encrypting.");
+        setStatus(encryptStatus, "File required", "error");
+        return;
+    }
+
+    let shift;
     try {
-        const updated = await requestWorkflow(currentRequest.start, currentRequest.goal, shift);
-        const samePath = updated.path.join("|") === currentResult.path.join("|");
-        const sameCost = updated.total_cost === currentResult.total_cost;
-        if (!samePath || !sameCost) {
-            throw new Error("Caesar shift unexpectedly modified shortest path!");
-        }
-        currentResult = updated;
-        renderRouteResults(updated);
-        appendLog(`Shift updated to ${shift}; optimal path (${updated.path.join(" → ")}) and cost (${updated.total_cost.toFixed(1)}) remained unchanged.`);
-        appendLog(`New ciphertext: ${updated.ciphertext}`);
+        shift = validateCipherShift(encryptCipherKey);
     } catch (error) {
-        if (encryptedExport) encryptedExport.textContent = `Error: ${error.message}`;
-        if (encryptionStatus) {
-            encryptionStatus.textContent = "Error";
-            encryptionStatus.className = "badge badge-neutral";
+        state.operation += 1;
+        resetEncryptResult();
+        setError(encryptError, error.message);
+        setStatus(encryptStatus, "Invalid shift", "error");
+        return;
+    }
+
+    const operation = ++state.operation;
+    resetEncryptResult();
+    setCipherBusy("encrypt", true);
+    setStatus(encryptStatus, "Encrypting…", "primary");
+
+    try {
+        const content = await state.file.text();
+        if (!content.trim()) throw new Error("The selected route file is empty.");
+        const result = await postJson("/api/encrypt", {
+            plaintext: content,
+            shift,
+            filename: state.file.name,
+        });
+        if (operation !== state.operation) return;
+
+        state.result = result;
+        if (encryptOutput) encryptOutput.textContent = `Ciphertext:\n${result.ciphertext}`;
+        if (copyCiphertextButton) copyCiphertextButton.disabled = false;
+        if (downloadEncryptedButton) downloadEncryptedButton.disabled = false;
+        setStatus(encryptStatus, "Encryption complete", "success");
+    } catch (error) {
+        if (operation !== state.operation) return;
+        setError(encryptError, error.message);
+        setStatus(encryptStatus, "Encryption failed", "error");
+    } finally {
+        if (operation === state.operation) setCipherBusy("encrypt", false);
+    }
+}
+
+async function runDecrypt() {
+    const state = cipherState.decrypt;
+    if (state.busy) return;
+    if (!state.file) {
+        setError(decryptError, "Select an encrypted .txt file before decrypting.");
+        setStatus(decryptStatus, "File required", "error");
+        return;
+    }
+
+    let shift;
+    try {
+        shift = validateCipherShift(decryptCipherKey);
+    } catch (error) {
+        state.operation += 1;
+        resetDecryptResult();
+        setError(decryptError, error.message);
+        setStatus(decryptStatus, "Invalid shift", "error");
+        return;
+    }
+
+    const operation = ++state.operation;
+    resetDecryptResult();
+    setCipherBusy("decrypt", true);
+    setStatus(decryptStatus, "Decrypting…", "primary");
+
+    try {
+        const content = await state.file.text();
+        if (!content.trim()) throw new Error("The selected encrypted file is empty.");
+        const result = await postJson("/api/decrypt", {
+            ciphertext: content,
+            shift,
+            filename: state.file.name,
+        });
+        if (operation !== state.operation) return;
+
+        state.result = result;
+        const weights = result.edge_weights.map((weight) => Number(weight).toFixed(1)).join(", ") || "None";
+        if (decryptOutput) {
+            decryptOutput.textContent = [
+                "Decrypted route:",
+                result.decrypted_message,
+                "",
+                `Restored path: ${result.path.join(" → ")}`,
+                `Edge weights: ${weights}`,
+                `Total distance: ${Number(result.total_cost).toFixed(1)}`,
+            ].join("\n");
         }
+        if (copyDecryptedButton) copyDecryptedButton.disabled = false;
+        if (downloadDecryptedButton) downloadDecryptedButton.disabled = false;
+        setStatus(decryptStatus, "Decryption complete", "success");
+    } catch (error) {
+        if (operation !== state.operation) return;
+        setError(decryptError, error.message);
+        setStatus(decryptStatus, "Decryption failed", "error");
+    } finally {
+        if (operation === state.operation) setCipherBusy("decrypt", false);
     }
 }
 
@@ -689,14 +1002,6 @@ function populateNodeSelectors(labels) {
     goalSelect.value = "T";
 }
 
-function updateRangeFill() {
-    const minimum = Number(cipherKeyInput.min) || 0;
-    const maximum = Number(cipherKeyInput.max) || 25;
-    const current = Number(cipherKeyInput.value);
-    const progress = ((current - minimum) / (maximum - minimum)) * 100;
-    cipherKeyInput.style.setProperty("--range-progress", `${progress}%`);
-}
-
 async function loadGraph() {
     try {
         const response = await fetch("/api/graph");
@@ -707,12 +1012,13 @@ async function loadGraph() {
         canvas.width = graph.canvas.width;
         canvas.height = graph.canvas.height;
         populateNodeSelectors(graph.labels);
+        setBusy(false);
+        if (systemEngineStatus) systemEngineStatus.textContent = "Engine online";
         drawScene();
     } catch (error) {
-        if (mapStatus) {
-            mapStatus.textContent = "● Graph Offline";
-            mapStatus.className = "badge badge-neutral";
-        }
+        graph = null;
+        setBusy(false);
+        if (systemEngineStatus) systemEngineStatus.textContent = "Engine offline";
         if (algorithmLog) algorithmLog.textContent = `[ERR] ${error.message}`;
         if (runStatus) {
             runStatus.textContent = "Offline";
@@ -721,71 +1027,232 @@ async function loadGraph() {
     }
 }
 
-async function downloadEncryptedText() {
-    if (!currentResult || !currentRequest) {
-        return;
+function downloadTextFile(filename, content) {
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = objectUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 0);
+}
+
+function downloadRoute() {
+    if (!currentResult || !currentRequest || !mapCiphertextResult?.ciphertext || routeDownloadBusy) return;
+    const filename = `route_${currentRequest.start}_${currentRequest.goal}.txt`;
+    routeDownloadBusy = true;
+    if (downloadRouteButton) {
+        downloadRouteButton.disabled = true;
+        downloadRouteButton.classList.add("is-loading");
+        downloadRouteButton.setAttribute("aria-busy", "true");
     }
-
-    downloadButton.disabled = true;
     try {
-        const shift = currentResult.shift ?? currentResult.cipher_key;
-        const response = await fetch("/api/download", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                start: currentRequest.start,
-                goal: currentRequest.goal,
-                shift: shift,
-                cipher_key: shift,
-            }),
-        });
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || "Unable to download encrypted route.");
-        }
-
-        const blob = await response.blob();
-        const disposition = response.headers.get("Content-Disposition") || "";
-        const filenameMatch = disposition.match(/filename\*?=(?:UTF-8''|\")?([^\";]+)/i);
-        const filename = filenameMatch
-            ? decodeURIComponent(filenameMatch[1].replace(/\"/g, ""))
-            : `route_${currentRequest.start}_${currentRequest.goal}.txt`;
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        URL.revokeObjectURL(url);
+        downloadTextFile(filename, `Ciphertext:\n${mapCiphertextResult.ciphertext}`);
+        setStatus(routeExportStatus, "Encrypted route downloaded", "success");
         appendLog(`Downloaded ciphertext file: ${filename}`);
     } catch (error) {
-        appendLog(`DOWNLOAD ERROR: ${error.message}`);
+        setStatus(routeExportStatus, `Download failed: ${error.message}`, "error");
     } finally {
-        downloadButton.disabled = false;
+        // Keep the button locked until the next task so a double-click cannot
+        // create two downloads. It becomes available again if the result remains.
+        window.setTimeout(() => {
+            routeDownloadBusy = false;
+            if (downloadRouteButton) {
+                downloadRouteButton.classList.remove("is-loading");
+                downloadRouteButton.setAttribute("aria-busy", "false");
+                downloadRouteButton.disabled = !currentResult || !currentRequest || !mapCiphertextResult?.ciphertext;
+            }
+        }, 0);
     }
 }
 
-function copyCiphertext() {
-    if (!currentResult || !currentResult.ciphertext) return;
-    navigator.clipboard.writeText(currentResult.ciphertext).then(() => {
-        const originalText = copyCiphertextButton.innerHTML;
-        copyCiphertextButton.innerHTML = `<span style="color: var(--color-success-text); font-weight: 600;">Copied!</span>`;
-        setTimeout(() => {
-            copyCiphertextButton.innerHTML = originalText;
-        }, 1600);
-    }).catch(() => {
-        appendLog("Clipboard copy failed.");
+function sourceBaseName(file, fallback) {
+    if (!file?.name) return fallback;
+    return file.name.replace(/\.txt$/i, "") || fallback;
+}
+
+function downloadEncryptedResult() {
+    const state = cipherState.encrypt;
+    const result = state.result;
+    if (!result?.ciphertext || state.downloadBusy) return;
+    const baseName = sourceBaseName(state.file, "route");
+    state.downloadBusy = true;
+    if (downloadEncryptedButton) {
+        downloadEncryptedButton.disabled = true;
+        downloadEncryptedButton.classList.add("is-loading");
+        downloadEncryptedButton.setAttribute("aria-busy", "true");
+    }
+    try {
+        downloadTextFile(`${baseName}_encrypted.txt`, `Ciphertext:\n${result.ciphertext}`);
+        setStatus(encryptStatus, "Encrypted file downloaded", "success");
+    } catch (error) {
+        setError(encryptError, `Download failed: ${error.message}`);
+        setStatus(encryptStatus, "Download failed", "error");
+    } finally {
+        window.setTimeout(() => {
+            state.downloadBusy = false;
+            if (downloadEncryptedButton) {
+                downloadEncryptedButton.disabled = !state.result?.ciphertext;
+                downloadEncryptedButton.classList.remove("is-loading");
+                downloadEncryptedButton.setAttribute("aria-busy", "false");
+            }
+        }, 0);
+    }
+}
+
+function downloadDecryptedResult() {
+    const state = cipherState.decrypt;
+    const result = state.result;
+    if (!result?.decrypted_message || state.downloadBusy) return;
+    const baseName = sourceBaseName(state.file, "route_encrypted").replace(/_encrypted$/i, "");
+    state.downloadBusy = true;
+    if (downloadDecryptedButton) {
+        downloadDecryptedButton.disabled = true;
+        downloadDecryptedButton.classList.add("is-loading");
+        downloadDecryptedButton.setAttribute("aria-busy", "true");
+    }
+    try {
+        downloadTextFile(`${baseName}_decrypted.txt`, `Route:\n${result.decrypted_message}`);
+        setStatus(decryptStatus, "Decrypted file downloaded", "success");
+    } catch (error) {
+        setError(decryptError, `Download failed: ${error.message}`);
+        setStatus(decryptStatus, "Download failed", "error");
+    } finally {
+        window.setTimeout(() => {
+            state.downloadBusy = false;
+            if (downloadDecryptedButton) {
+                downloadDecryptedButton.disabled = !state.result?.decrypted_message;
+                downloadDecryptedButton.classList.remove("is-loading");
+                downloadDecryptedButton.setAttribute("aria-busy", "false");
+            }
+        }, 0);
+    }
+}
+
+async function copyText(text) {
+    if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+        return;
+    }
+    const temporaryInput = document.createElement("textarea");
+    temporaryInput.value = text;
+    temporaryInput.setAttribute("readonly", "");
+    temporaryInput.style.position = "fixed";
+    temporaryInput.style.opacity = "0";
+    document.body.appendChild(temporaryInput);
+    temporaryInput.select();
+    const copied = document.execCommand("copy");
+    temporaryInput.remove();
+    if (!copied) throw new Error("Clipboard permission was denied.");
+}
+
+async function copyCiphertext() {
+    const result = cipherState.encrypt.result;
+    if (!result?.ciphertext) return;
+    try {
+        await copyText(result.ciphertext);
+        setStatus(encryptStatus, "Ciphertext copied", "success");
+    } catch (error) {
+        setError(encryptError, `Copy failed: ${error.message}`);
+    }
+}
+
+async function copyDecryptedResult() {
+    const result = cipherState.decrypt.result;
+    if (!result?.decrypted_message) return;
+    try {
+        await copyText(result.decrypted_message);
+        setStatus(decryptStatus, "Result copied", "success");
+    } catch (error) {
+        setError(decryptError, `Copy failed: ${error.message}`);
+    }
+}
+
+function activateTab(activeTab, inactiveTab, activePanel, inactivePanel) {
+    activeTab?.classList.add("active");
+    activeTab?.setAttribute("aria-selected", "true");
+    activeTab?.setAttribute("tabindex", "0");
+    inactiveTab?.classList.remove("active");
+    inactiveTab?.setAttribute("aria-selected", "false");
+    inactiveTab?.setAttribute("tabindex", "-1");
+    if (activePanel) {
+        activePanel.classList.add("active");
+        activePanel.hidden = false;
+        activePanel.classList.remove("hidden");
+    }
+    if (inactivePanel) {
+        inactivePanel.classList.remove("active");
+        inactivePanel.hidden = true;
+        inactivePanel.classList.add("hidden");
+    }
+}
+
+function showMapPage() {
+    activateTab(mapPageTab, cipherPageTab, mapPagePanel, cipherPagePanel);
+    window.requestAnimationFrame(drawScene);
+}
+
+function showCipherPage() {
+    activateTab(cipherPageTab, mapPageTab, cipherPagePanel, mapPagePanel);
+}
+
+function showEncryptPanel() {
+    activateTab(encryptTab, decryptTab, encryptPanel, decryptPanel);
+}
+
+function showDecryptPanel() {
+    activateTab(decryptTab, encryptTab, decryptPanel, encryptPanel);
+}
+
+function bindTabKeyboard(tabs, activate) {
+    tabs.forEach((tab, index) => {
+        tab?.addEventListener("keydown", (event) => {
+            let nextIndex = null;
+            if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+                nextIndex = (index + 1) % tabs.length;
+            } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+                nextIndex = (index - 1 + tabs.length) % tabs.length;
+            } else if (event.key === "Home") {
+                nextIndex = 0;
+            } else if (event.key === "End") {
+                nextIndex = tabs.length - 1;
+            }
+
+            if (nextIndex === null || !tabs[nextIndex]) return;
+            event.preventDefault();
+            tabs[nextIndex].focus();
+            activate(nextIndex);
+        });
     });
 }
 
 // Event Listeners
-runButton.addEventListener("click", runAStar);
-resetButton.addEventListener("click", () => reset());
-downloadButton.addEventListener("click", downloadEncryptedText);
-if (copyCiphertextButton) {
-    copyCiphertextButton.addEventListener("click", copyCiphertext);
-}
+runButton?.addEventListener("click", runAStar);
+resetButton?.addEventListener("click", () => reset());
+downloadRouteButton?.addEventListener("click", downloadRoute);
+mapPageTab?.addEventListener("click", showMapPage);
+cipherPageTab?.addEventListener("click", showCipherPage);
+encryptTab?.addEventListener("click", showEncryptPanel);
+decryptTab?.addEventListener("click", showDecryptPanel);
+bindTabKeyboard([mapPageTab, cipherPageTab], (index) => {
+    if (index === 0) showMapPage();
+    else showCipherPage();
+});
+bindTabKeyboard([encryptTab, decryptTab], (index) => {
+    if (index === 0) showEncryptPanel();
+    else showDecryptPanel();
+});
+
+encryptFileInput?.addEventListener("change", () => selectCipherFile("encrypt"));
+decryptFileInput?.addEventListener("change", () => selectCipherFile("decrypt"));
+encryptButton?.addEventListener("click", runEncrypt);
+decryptButton?.addEventListener("click", runDecrypt);
+copyCiphertextButton?.addEventListener("click", copyCiphertext);
+copyDecryptedButton?.addEventListener("click", copyDecryptedResult);
+downloadEncryptedButton?.addEventListener("click", downloadEncryptedResult);
+downloadDecryptedButton?.addEventListener("click", downloadDecryptedResult);
 
 showDistanceButton.addEventListener("click", () => {
     showWeights = true;
@@ -802,25 +1269,43 @@ hideDistanceButton.addEventListener("click", () => {
 });
 
 [startSelect, goalSelect].forEach((select) => {
-    select.addEventListener("change", () => reset({ clearLog: false }));
+    select.addEventListener("change", () => reset());
 });
 
-cipherKeyInput.addEventListener("input", () => {
-    const shift = cipherKeyInput.value;
-    updateRangeFill();
-    cipherKeyValue.textContent = shift;
-    if (cryptoActiveShift) cryptoActiveShift.textContent = shift;
-    if (currentResult) {
-        downloadButton.disabled = true;
-        if (copyCiphertextButton) copyCiphertextButton.disabled = true;
-        if (encryptionStatus) {
-            encryptionStatus.textContent = "Shift modified";
-            encryptionStatus.className = "badge badge-neutral";
-        }
+mapCipherKey?.addEventListener("input", () => {
+    updateRangeFill(mapCipherKey, mapCipherKeyValue);
+    if (!currentResult) return;
+
+    mapEncryptionOperation += 1;
+    mapCiphertextResult = null;
+    if (routeSerializedOutput) {
+        routeSerializedOutput.textContent = "Shift changed. Release the slider to encrypt the route.";
+    }
+    if (downloadRouteButton) downloadRouteButton.disabled = true;
+    setStatus(routeExportStatus, "Shift changed", "neutral");
+});
+
+mapCipherKey?.addEventListener("change", () => {
+    if (currentResult && currentRequest && !mapEncryptionBusy) {
+        void refreshMapEncryption(currentResult, animationToken);
     }
 });
 
-cipherKeyInput.addEventListener("change", refreshEncryption);
+encryptCipherKey?.addEventListener("input", () => {
+    cipherState.encrypt.operation += 1;
+    updateRangeFill(encryptCipherKey, encryptCipherKeyValue);
+    resetEncryptResult();
+    if (encryptButton) encryptButton.disabled = !cipherState.encrypt.file;
+    setStatus(encryptStatus, cipherState.encrypt.file ? "Shift changed — press Encrypt" : "Awaiting file", "neutral");
+});
+
+decryptCipherKey?.addEventListener("input", () => {
+    cipherState.decrypt.operation += 1;
+    updateRangeFill(decryptCipherKey, decryptCipherKeyValue);
+    resetDecryptResult();
+    if (decryptButton) decryptButton.disabled = !cipherState.decrypt.file;
+    setStatus(decryptStatus, cipherState.decrypt.file ? "Shift changed — press Decrypt" : "Awaiting file", "neutral");
+});
 
 // Tab switching for Computation Log
 if (tabTableView && tabRawLogView) {
@@ -863,5 +1348,11 @@ canvas.addEventListener("click", (event) => {
 });
 
 // Initialization
-updateRangeFill();
+showMapPage();
+showEncryptPanel();
+updateRangeFill(mapCipherKey, mapCipherKeyValue);
+updateRangeFill(encryptCipherKey, encryptCipherKeyValue);
+updateRangeFill(decryptCipherKey, decryptCipherKeyValue);
+resetEncryptResult();
+resetDecryptResult();
 loadGraph();

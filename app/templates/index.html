@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#080C14">
     <meta name="color-scheme" content="dark">
-    <meta name="description" content="Explore weighted A* pathfinding and secure each computed route with a single-pass Caesar cipher in GraphCrypt.">
+    <meta name="description" content="Explore weighted A* pathfinding and encrypt or decrypt route files with GraphCrypt's Caesar cipher workspace.">
     <meta property="og:title" content="GraphCrypt — Route intelligence, securely encoded">
     <meta property="og:description" content="Weighted A* pathfinding and single-pass Caesar cipher visualization in one professional workspace.">
     <meta property="og:type" content="website">
@@ -58,11 +58,6 @@
                         <span class="step-num">2</span>
                         <span>Route Serialize</span>
                     </span>
-                    <span class="workflow-separator" aria-hidden="true">→</span>
-                    <span class="workflow-step">
-                        <span class="step-num">3</span>
-                        <span>Caesar Encrypt</span>
-                    </span>
                 </div>
                 <div class="system-status-badge">
                     <span class="status-indicator-dot"></span>
@@ -72,8 +67,54 @@
         </div>
     </header>
 
-    <!-- Main Desktop Dashboard (2-Column Layout: Big Map on Left, Controls & Results on Right) -->
-    <main class="dashboard-container" id="mainDashboard">
+    <!-- Primary Map / Cipher navigation -->
+    <nav class="page-navigation" aria-label="GraphCrypt workspace navigation">
+        <div id="mainPageTabs" class="page-tabs" role="tablist" aria-label="Workspace views">
+            <button
+                id="mapPageTab"
+                class="page-tab active"
+                type="button"
+                role="tab"
+                aria-selected="true"
+                aria-controls="mapPagePanel"
+                tabindex="0"
+            >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+                    <line x1="8" y1="2" x2="8" y2="18"></line>
+                    <line x1="16" y1="6" x2="16" y2="22"></line>
+                </svg>
+                <span>Map</span>
+            </button>
+            <button
+                id="cipherPageTab"
+                class="page-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="cipherPagePanel"
+                tabindex="-1"
+            >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span>Cipher</span>
+            </button>
+        </div>
+    </nav>
+
+    <main class="workspace-main" id="mainDashboard">
+        <!-- Map page: graph, A* controls, results, plaintext export, and trace only -->
+        <section
+            id="mapPagePanel"
+            class="page-panel active"
+            role="tabpanel"
+            aria-labelledby="mapPageTab"
+            tabindex="0"
+        >
+            <!-- Main Desktop Dashboard (2-Column Layout: Big Map on Left, Controls & Results on Right) -->
+            <div class="dashboard-container">
         
         <!-- LEFT COLUMN: Large Argentina Route Network Map -->
         <section class="map-column" aria-label="Argentina Map View">
@@ -84,7 +125,6 @@
                         <span class="card-meta-pill">27 nodes &bull; 40 edges</span>
                     </div>
                     <div class="card-actions">
-                        <span id="mapStatus" class="badge badge-neutral">Loading map…</span>
                         <div class="button-group weight-toggle-group">
                             <span class="group-label">Weights:</span>
                             <button id="showDistanceButton" class="btn btn-xs btn-outline" type="button" title="Show edge weights">Show</button>
@@ -168,16 +208,16 @@
                         </div>
                     </div>
 
-                    <!-- Caesar Shift Slider -->
-                    <div class="form-group slider-group">
+                    <!-- Caesar Shift for the encrypted route export -->
+                    <div class="form-group slider-group route-cipher-key-control">
                         <div class="slider-header">
-                            <label class="form-label" for="cipherKey">Caesar Shift Key</label>
+                            <label class="form-label" for="mapCipherKey">Caesar Shift Key</label>
                             <span class="slider-value-display">
-                                Current Shift: <strong id="cipherKeyValue">3</strong>
+                                Current Shift: <strong id="mapCipherKeyValue">3</strong>
                             </span>
                         </div>
-                        <input id="cipherKey" class="form-range" type="range" min="0" max="25" value="3" step="1" aria-label="Caesar Shift key from 0 to 25">
-                        <div class="slider-scale">
+                        <input id="mapCipherKey" class="form-range" type="range" min="0" max="25" value="3" step="1" aria-label="Map route Caesar Shift key from 0 to 25">
+                        <div class="slider-scale" aria-hidden="true">
                             <span>0</span>
                             <span>5</span>
                             <span>10</span>
@@ -189,7 +229,7 @@
 
                     <!-- Action Buttons -->
                     <div class="control-actions-row">
-                        <button id="runButton" class="btn btn-primary btn-action-main" type="button">
+                        <button id="runButton" class="btn btn-primary btn-action-main" type="button" disabled aria-busy="false">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <polygon points="5 3 19 12 5 21 5 3"></polygon>
                             </svg>
@@ -209,14 +249,14 @@
                     <div class="info-callout">
                         <div class="callout-icon" aria-hidden="true">ℹ</div>
                         <div class="callout-text">
-                            <strong>Guaranteed optimality.</strong> A* uses the original graph weights; the Caesar shift is applied only after the route is resolved.
+                            <strong>Guaranteed optimality.</strong> A* uses the original graph weights; Caesar encryption is applied only after the route is resolved.
                         </div>
                     </div>
                 </form>
             </aside>
 
-            <!-- 2. Results Subgrid: Shortest Route Result (Left) & Encrypted Route (Right) -->
-            <div class="results-subgrid" aria-label="Route Results and Ciphertext Export">
+            <!-- 2. Results Subgrid: Shortest Route Result and Encrypted Export -->
+            <div class="results-subgrid" aria-label="Route Results and Encrypted Export">
                 
                 <!-- Shortest Route Result Card -->
                 <article class="flat-card result-card" id="routeResultCard">
@@ -228,14 +268,18 @@
                     </div>
 
                     <div class="result-card-body">
-                        <div class="metrics-grid">
+                        <div class="metrics-grid route-metrics-grid">
                             <div class="metric-item">
                                 <span class="metric-label">Total Distance</span>
                                 <span class="metric-value" id="routeMetricDistance">—</span>
                             </div>
                             <div class="metric-item">
-                                <span class="metric-label">Nodes</span>
+                                <span class="metric-label">Path Nodes</span>
                                 <span class="metric-value" id="routeMetricNodes">—</span>
+                            </div>
+                            <div class="metric-item">
+                                <span class="metric-label">Visited Nodes</span>
+                                <span class="metric-value" id="routeMetricVisited">—</span>
                             </div>
                             <div class="metric-item">
                                 <span class="metric-label">Status</span>
@@ -249,49 +293,38 @@
                                 <span class="placeholder-text">Run A* to compute the optimal shortest path.</span>
                             </div>
                         </div>
+                        <div class="route-visited-block">
+                            <span class="sub-label">Visited Nodes:</span>
+                            <span id="routeVisitedNodesDisplay" class="route-visited-list">Awaiting search</span>
+                        </div>
                     </div>
                 </article>
 
-                <!-- Encrypted Route Card -->
-                <article class="flat-card encryption-card" id="encryptionCard">
+                <!-- Encrypted Route Export Card -->
+                <article class="flat-card route-export-card" id="routeExportCard">
                     <div class="card-header">
                         <div class="header-title-wrap">
-                            <h2 class="card-title">Cipher Output</h2>
-                            <span class="meta-tag compact-tag">
-                                Shift: <strong id="cryptoActiveShift">3</strong>
-                            </span>
+                            <h2 class="card-title">Encrypted Route</h2>
+                            <span class="meta-tag compact-tag">Caesar .txt</span>
                         </div>
-                        <span id="encryptionStatus" class="badge badge-neutral">🔒 Protected</span>
+                        <span id="routeExportStatus" class="badge badge-neutral" role="status" aria-live="polite">Not available</span>
                     </div>
 
-                    <div class="crypto-content">
-                        <div class="crypto-field">
-                            <label class="crypto-label" for="encryptedExport">Ciphertext (.txt payload):</label>
-                            <pre id="encryptedExport" class="monospace-box ciphertext-box" tabindex="0" aria-live="polite">Run a path first to serialize and encrypt the route.</pre>
-                        </div>
-
-                        <div class="crypto-field">
-                            <label class="crypto-label">Decrypted Verification:</label>
-                            <pre id="decryptedVerificationBox" class="monospace-box verification-box">Awaiting A* execution…</pre>
-                        </div>
+                    <div class="route-export-content">
+                        <label class="route-label" for="routeSerializedOutput">Ciphertext preview:</label>
+                        <pre id="routeSerializedOutput" class="monospace-box route-serialized-output" tabindex="0" aria-live="polite">Run A* to encrypt the route with the selected Caesar shift.</pre>
                     </div>
 
-                    <div class="card-footer-actions">
-                        <button id="downloadButton" class="btn btn-primary btn-sm" type="button" disabled>
+                    <div class="card-footer-actions route-export-actions">
+                        <button id="downloadRouteButton" class="btn btn-primary btn-sm" type="button" disabled aria-busy="false" aria-describedby="routeExportHint">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                 <polyline points="7 10 12 15 17 10"></polyline>
                                 <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
-                            <span>Download .txt</span>
+                            <span id="downloadRouteButtonLabel">Download Encrypted Route</span>
                         </button>
-                        <button id="copyCiphertextButton" class="btn btn-outline btn-sm" type="button" disabled title="Copy ciphertext to clipboard">
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                            </svg>
-                            <span>Copy</span>
-                        </button>
+                        <span id="routeExportHint" class="action-hint">Encrypted .txt - decrypt with the same shift</span>
                     </div>
                 </article>
             </div>
@@ -342,9 +375,202 @@
                     <pre id="algorithmLog" class="monospace-box log-box" tabindex="0" aria-live="polite">[000] Awaiting weighted A* execution…</pre>
                 </div>
             </article>
-
+        </section>
+            </div>
         </section>
 
+        <section
+            id="cipherPagePanel"
+            class="page-panel"
+            role="tabpanel"
+            aria-labelledby="cipherPageTab"
+            tabindex="0"
+            hidden
+        >
+            <div class="cipher-workspace">
+                <header class="flat-card cipher-page-header">
+                    <div class="cipher-page-heading">
+                        <div>
+                            <p class="eyebrow">Client-side file tools</p>
+                            <h2>Caesar Cipher Workspace</h2>
+                            <p>Encrypt a downloaded route or restore an encrypted route. Files are processed only after you choose an action.</p>
+                        </div>
+                        <span class="system-status-badge">
+                            <span class="status-indicator-dot" aria-hidden="true"></span>
+                            No automatic processing
+                        </span>
+                    </div>
+
+                    <div id="cipherModeTabs" class="cipher-tabs" role="tablist" aria-label="Cipher mode">
+                        <button
+                            id="encryptTab"
+                            class="cipher-tab active"
+                            type="button"
+                            role="tab"
+                            aria-selected="true"
+                            aria-controls="encryptPanel"
+                            tabindex="0"
+                        >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                            </svg>
+                            Encrypt
+                        </button>
+                        <button
+                            id="decryptTab"
+                            class="cipher-tab"
+                            type="button"
+                            role="tab"
+                            aria-selected="false"
+                            aria-controls="decryptPanel"
+                            tabindex="-1"
+                        >
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                                <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+                                <path d="M17 6V3l3 3-3 3"></path>
+                            </svg>
+                            Decrypt
+                        </button>
+                    </div>
+                </header>
+
+                <section
+                    id="encryptPanel"
+                    class="cipher-panel active"
+                    role="tabpanel"
+                    aria-labelledby="encryptTab"
+                    tabindex="0"
+                >
+                    <article class="flat-card cipher-card">
+                        <div class="card-header">
+                            <div class="header-title-wrap">
+                                <h2 class="card-title">Encrypt Route File</h2>
+                                <span class="meta-tag compact-tag">Caesar Cipher</span>
+                            </div>
+                            <span id="encryptStatus" class="badge badge-neutral cipher-status" role="status" aria-live="polite">Awaiting file</span>
+                        </div>
+
+                        <form id="encryptForm" class="cipher-form" onsubmit="return false;">
+                            <div class="cipher-form-grid">
+                                <div class="file-upload-zone">
+                                    <input id="encryptFileInput" class="file-input" type="file" accept=".txt,text/plain" aria-describedby="encryptFileHint">
+                                    <label class="file-picker" for="encryptFileInput">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                            <line x1="12" y1="18" x2="12" y2="11"></line>
+                                            <polyline points="9 14 12 11 15 14"></polyline>
+                                        </svg>
+                                        Choose route .txt
+                                    </label>
+                                    <span id="encryptFileName" class="file-name is-empty" data-empty="true">No file selected</span>
+                                    <span id="encryptFileHint" class="file-hint">Upload the plaintext Route file downloaded from Map. Nothing is read until Encrypt is pressed.</span>
+                                </div>
+
+                                <div class="cipher-key-control">
+                                    <div class="slider-header">
+                                        <label class="form-label" for="encryptCipherKey">Caesar Shift Key</label>
+                                        <span class="slider-value-display">Current Shift: <strong id="encryptCipherKeyValue">3</strong></span>
+                                    </div>
+                                    <input id="encryptCipherKey" class="form-range" type="range" min="0" max="25" value="3" step="1" aria-label="Encryption Caesar Shift key from 0 to 25">
+                                    <div class="slider-scale" aria-hidden="true"><span>0</span><span>5</span><span>10</span><span>15</span><span>20</span><span>25</span></div>
+                                </div>
+                            </div>
+
+                            <div class="cipher-actions">
+                                <button id="encryptButton" class="btn btn-primary" type="button" disabled aria-busy="false">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                                    <span>Encrypt</span>
+                                </button>
+                                <span class="action-hint">Runs only when pressed</span>
+                            </div>
+                            <p id="encryptError" class="cipher-error" role="alert" aria-live="assertive" hidden></p>
+
+                            <div class="cipher-result">
+                                <div class="cipher-result-header">
+                                    <span class="cipher-result-title">Ciphertext output</span>
+                                    <span class="meta-tag compact-tag">.txt payload</span>
+                                </div>
+                                <pre id="encryptOutput" class="monospace-box cipher-output" tabindex="0" aria-live="polite">Ciphertext will appear here after you press Encrypt.</pre>
+                                <div class="result-actions">
+                                    <button id="copyCiphertextButton" class="btn btn-outline btn-sm" type="button" disabled>Copy Ciphertext</button>
+                                    <button id="downloadEncryptedButton" class="btn btn-primary btn-sm" type="button" disabled>Download Encrypted File</button>
+                                </div>
+                            </div>
+                        </form>
+                    </article>
+                </section>
+
+                <section
+                    id="decryptPanel"
+                    class="cipher-panel"
+                    role="tabpanel"
+                    aria-labelledby="decryptTab"
+                    tabindex="0"
+                    hidden
+                >
+                    <article class="flat-card cipher-card">
+                        <div class="card-header">
+                            <div class="header-title-wrap">
+                                <h2 class="card-title">Decrypt Route File</h2>
+                                <span class="meta-tag compact-tag">Caesar Cipher</span>
+                            </div>
+                            <span id="decryptStatus" class="badge badge-neutral cipher-status" role="status" aria-live="polite">Awaiting file</span>
+                        </div>
+
+                        <form id="decryptForm" class="cipher-form" onsubmit="return false;">
+                            <div class="cipher-form-grid">
+                                <div class="file-upload-zone">
+                                    <input id="decryptFileInput" class="file-input" type="file" accept=".txt,text/plain" aria-describedby="decryptFileHint">
+                                    <label class="file-picker" for="decryptFileInput">
+                                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                            <polyline points="14 2 14 8 20 8"></polyline>
+                                            <polyline points="17 10 12 15 7 10"></polyline>
+                                        </svg>
+                                        Choose encrypted .txt
+                                    </label>
+                                    <span id="decryptFileName" class="file-name is-empty" data-empty="true">No file selected</span>
+                                    <span id="decryptFileHint" class="file-hint">Upload a Ciphertext file. The optional Ciphertext: label is ignored when Decrypt is pressed.</span>
+                                </div>
+
+                                <div class="cipher-key-control">
+                                    <div class="slider-header">
+                                        <label class="form-label" for="decryptCipherKey">Caesar Shift Key</label>
+                                        <span class="slider-value-display">Current Shift: <strong id="decryptCipherKeyValue">3</strong></span>
+                                    </div>
+                                    <input id="decryptCipherKey" class="form-range" type="range" min="0" max="25" value="3" step="1" aria-label="Decryption Caesar Shift key from 0 to 25">
+                                    <div class="slider-scale" aria-hidden="true"><span>0</span><span>5</span><span>10</span><span>15</span><span>20</span><span>25</span></div>
+                                </div>
+                            </div>
+
+                            <div class="cipher-actions">
+                                <button id="decryptButton" class="btn btn-primary" type="button" disabled aria-busy="false">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path><path d="M17 6V3l3 3-3 3"></path></svg>
+                                    <span>Decrypt</span>
+                                </button>
+                                <span class="action-hint">Runs only when pressed</span>
+                            </div>
+                            <p id="decryptError" class="cipher-error" role="alert" aria-live="assertive" hidden></p>
+
+                            <div class="cipher-result">
+                                <div class="cipher-result-header">
+                                    <span class="cipher-result-title">Restored route</span>
+                                    <span class="meta-tag compact-tag">Plaintext</span>
+                                </div>
+                                <pre id="decryptOutput" class="monospace-box cipher-output decrypted-output" tabindex="0" aria-live="polite">The restored route will appear here after you press Decrypt.</pre>
+                                <div class="result-actions">
+                                    <button id="copyDecryptedButton" class="btn btn-outline btn-sm" type="button" disabled>Copy Result</button>
+                                    <button id="downloadDecryptedButton" class="btn btn-primary btn-sm" type="button" disabled>Download Decrypted File</button>
+                                </div>
+                            </div>
+                        </form>
+                    </article>
+                </section>
+            </div>
+        </section>
     </main>
 
     <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>

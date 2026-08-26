@@ -8,7 +8,13 @@ Provides pure, decoupled functions for:
 
 from __future__ import annotations
 
+import math
+import re
 from typing import Any
+
+
+_NODE_LABEL_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9]*$")
+_NUMBER_PATTERN = re.compile(r"^[+-]?(?:\d+(?:\.\d*)?|\.\d+)$")
 
 
 def validate_shift(shift: int) -> int:
@@ -76,6 +82,39 @@ def build_route_message(
     return f"{path_str}|{weights_str}|TOTAL:{float(total_cost):.1f}"
 
 
+def normalize_labeled_text(text: str, label: str) -> str:
+    """Trim uploaded text and remove one optional leading ``<label>:`` marker.
+
+    Text files written with a UTF-8 byte-order mark are accepted.  Only a
+    leading label is removed, so occurrences inside the serialized payload are
+    left untouched.
+    """
+    if not isinstance(text, str):
+        raise TypeError("Uploaded content must be a string.")
+    if not isinstance(label, str) or not label.strip():
+        raise ValueError("Payload label must be a non-empty string.")
+
+    normalized = text.strip()
+    if normalized.startswith("\ufeff"):
+        normalized = normalized[1:].strip()
+
+    label_pattern = re.compile(rf"^{re.escape(label.strip())}\s*:\s*", re.IGNORECASE)
+    normalized = label_pattern.sub("", normalized, count=1).strip()
+    return normalized
+
+
+def _parse_route_number(value: str, field_name: str) -> float:
+    """Parse a finite integer-or-decimal route value with a clear error."""
+    normalized = value.strip()
+    if not normalized or not _NUMBER_PATTERN.fullmatch(normalized):
+        raise ValueError(f"Invalid {field_name} numeric value: '{value}'.")
+
+    parsed = float(normalized)
+    if not math.isfinite(parsed):
+        raise ValueError(f"Invalid {field_name} numeric value: '{value}'.")
+    return parsed
+
+
 def parse_route_message(message: str) -> dict[str, Any]:
     """Parse a serialized route message back into its components.
 
@@ -87,26 +126,60 @@ def parse_route_message(message: str) -> dict[str, Any]:
     if not isinstance(message, str):
         raise TypeError("Route message must be a string.")
 
+    message = message.strip()
+    if not message:
+        raise ValueError("Route message is empty.")
+
     parts = message.split("|")
     if len(parts) != 3:
         raise ValueError(
             f"Invalid route message format. Expected 3 pipe-separated fields, got {len(parts)}."
         )
 
-    path_str, weights_str, total_str = parts
+    path_str, weights_str, total_str = (part.strip() for part in parts)
 
-    path = path_str.split("-") if path_str else []
-    edge_weights = [float(w) for w in weights_str.split(",") if w.strip()]
+    if not path_str:
+        raise ValueError("Route path must contain at least one node.")
+
+    path = [node.strip() for node in path_str.split("-")]
+    if any(not node or not _NODE_LABEL_PATTERN.fullmatch(node) for node in path):
+        raise ValueError("Route path contains an invalid node label.")
+
+    if weights_str:
+        weight_values = weights_str.split(",")
+        if any(not value.strip() for value in weight_values):
+            raise ValueError("Route edge weights cannot contain empty values.")
+        edge_weights = [
+            _parse_route_number(value, "edge weight") for value in weight_values
+        ]
+    else:
+        edge_weights = []
+
+    expected_weight_count = len(path) - 1
+    if len(edge_weights) != expected_weight_count:
+        raise ValueError(
+            "Route edge-weight count must equal the number of path edges "
+            f"({expected_weight_count}); got {len(edge_weights)}."
+        )
+    if any(weight < 0 for weight in edge_weights):
+        raise ValueError("Route edge weights cannot be negative.")
 
     if not total_str.startswith("TOTAL:"):
         raise ValueError(
             f"Invalid total cost format in route message. Expected 'TOTAL:<cost>', got '{total_str}'."
         )
 
-    try:
-        total_cost = float(total_str.replace("TOTAL:", "", 1))
-    except ValueError as err:
-        raise ValueError(f"Invalid total cost numeric value: {total_str}") from err
+    total_value = total_str.replace("TOTAL:", "", 1)
+    total_cost = _parse_route_number(total_value, "total cost")
+    if total_cost < 0:
+        raise ValueError("Route total cost cannot be negative.")
+
+    expected_total = math.fsum(edge_weights)
+    if not math.isclose(total_cost, expected_total, rel_tol=0.0, abs_tol=1e-6):
+        raise ValueError(
+            "Route total cost does not equal the sum of its edge weights "
+            f"({expected_total:g})."
+        )
 
     return {
         "path": path,
