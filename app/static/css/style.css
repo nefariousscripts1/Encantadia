@@ -3174,3 +3174,1147 @@ body {
         background: Highlight;
     }
 }
+
+/* ==========================================================================
+   Content-first scrolling and readable responsive layout
+
+   The dashboard used to size the application, page panel, dashboard, and
+   columns to the viewport. That made the lower result cards disappear on
+   shorter desktop screens. These rules keep the visual system intact while
+   allowing the document to grow to fit its content.
+   ========================================================================== */
+
+html,
+body {
+    width: 100%;
+    min-height: 100%;
+    height: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+body {
+    font-size: 16px;
+    line-height: 1.5;
+}
+
+body.app {
+    width: 100%;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+}
+
+.workspace-main {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    flex: 0 0 auto;
+    overflow: visible;
+}
+
+.page-panel.active,
+#cipherPagePanel.page-panel.active {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: none;
+    flex: none;
+    overflow: visible;
+}
+
+#mapPagePanel .dashboard-container {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    flex: none;
+    overflow: visible;
+}
+
+.dashboard-container {
+    display: grid;
+    height: auto;
+    max-height: none;
+    min-height: 0;
+    align-items: start;
+    overflow: visible;
+    padding: 16px 18px 48px;
+}
+
+.map-column,
+.side-column {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+}
+
+.map-column {
+    display: flex;
+    flex-direction: column;
+}
+
+.side-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.map-card {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    flex: 0 0 auto;
+}
+
+.map-canvas-wrapper {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    flex: 0 0 auto;
+    aspect-ratio: 1409 / 1117;
+}
+
+.map-legend {
+    height: auto;
+    min-height: 36px;
+    max-height: none;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    overflow: visible;
+    padding: 10px 12px;
+    line-height: 1.35;
+}
+
+.side-column > *,
+.results-subgrid,
+.computation-card {
+    flex: 0 0 auto;
+}
+
+.results-subgrid {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.computation-card {
+    width: 100%;
+    height: auto;
+    min-height: 320px;
+}
+
+.computation-table-wrapper {
+    width: 100%;
+    height: auto;
+    min-height: 240px;
+    max-height: none;
+    flex: 0 0 auto;
+    overflow-x: auto;
+    overflow-y: visible;
+}
+
+.raw-log-container {
+    height: auto;
+    min-height: 240px;
+    flex: 0 0 auto;
+    overflow: visible;
+}
+
+.log-box {
+    height: auto;
+    min-height: 220px;
+    max-height: none;
+    overflow: visible;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+/* Cards may keep their rounded visual treatment, but their content is no
+   longer placed inside a fixed-height box that can hide its last rows. */
+.card-header {
+    height: auto;
+    min-height: 52px;
+    max-height: none;
+    align-items: center;
+    flex-wrap: wrap;
+    padding: 11px 16px;
+}
+
+.header-title-wrap {
+    min-width: 0;
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+}
+
+.card-title {
+    min-width: 0;
+    overflow: visible;
+    font-size: clamp(18px, 1.15vw, 20px);
+    line-height: 1.25;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.card-meta-pill,
+.meta-tag,
+.badge {
+    max-width: 100%;
+    font-size: 14px;
+    line-height: 1.25;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.controls-form {
+    gap: 14px;
+    padding: 16px;
+}
+
+.form-group-row {
+    gap: 12px;
+}
+
+.form-group {
+    gap: 7px;
+}
+
+.form-label,
+.slider-value-display {
+    font-size: 15px;
+    line-height: 1.4;
+}
+
+.form-select {
+    height: 44px;
+    padding: 7px 34px 7px 12px;
+    font-size: 16px;
+}
+
+.slider-group {
+    padding: 12px 14px 10px;
+}
+
+.slider-header {
+    margin-bottom: 8px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.slider-value-display strong {
+    min-width: 28px;
+}
+
+.form-range {
+    height: 8px;
+    margin: 5px 0 8px;
+}
+
+.form-range::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+}
+
+.form-range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+}
+
+.slider-scale {
+    font-size: 14px;
+}
+
+.control-actions-row {
+    gap: 10px;
+}
+
+.btn-action-main,
+.btn-action-sub {
+    height: auto;
+    min-height: 44px;
+    font-size: 16px;
+}
+
+.btn-action-sub {
+    padding-inline: 16px;
+}
+
+.info-callout {
+    gap: 9px;
+    padding: 10px 12px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.result-card-body {
+    gap: 14px;
+    padding: 14px 16px;
+}
+
+#mapPagePanel .metrics-grid,
+.metrics-grid {
+    grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+    gap: 10px;
+}
+
+.metric-item {
+    min-height: 72px;
+    gap: 5px;
+    padding: 10px;
+}
+
+.metric-label {
+    font-size: 14px;
+    line-height: 1.3;
+    letter-spacing: 0.04em;
+}
+
+.metric-value {
+    font-size: 20px;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+}
+
+.metric-value.status-text {
+    font-size: 15px;
+    line-height: 1.35;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+}
+
+.route-display-block {
+    display: flex;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sub-label,
+.placeholder-text,
+.route-label,
+.crypto-label,
+.action-hint {
+    font-size: 15px;
+    line-height: 1.45;
+}
+
+.sub-label {
+    white-space: normal;
+}
+
+.route-nodes-sequence {
+    min-height: 48px;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 7px;
+    padding: 8px;
+    overflow: visible;
+}
+
+.route-node-chip {
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
+}
+
+.route-node-arrow {
+    font-size: 15px;
+}
+
+.route-visited-block {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.route-visited-list {
+    min-width: 0;
+    max-width: 100%;
+    overflow: visible;
+    font-size: 15px;
+    line-height: 1.5;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.route-export-content {
+    gap: 8px;
+    padding: 14px 16px;
+}
+
+.route-label {
+    color: var(--color-text-secondary);
+    font-weight: 700;
+}
+
+#routeSerializedOutput {
+    height: auto;
+    min-height: 100px;
+    max-height: none;
+    padding: 12px;
+    overflow: visible;
+    font-size: 15px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.card-footer-actions {
+    height: auto;
+    min-height: 62px;
+    max-height: none;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px 14px;
+}
+
+.card-footer-actions .btn-primary,
+.card-footer-actions .btn-outline {
+    height: auto;
+    min-height: 42px;
+    flex: 1 1 260px;
+    font-size: 15px;
+    line-height: 1.25;
+}
+
+#downloadRouteButton {
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
+}
+
+.route-export-actions .action-hint {
+    flex: 1 1 220px;
+    min-width: 0;
+}
+
+.flat-table {
+    font-size: 15px;
+}
+
+.flat-table th,
+.flat-table td {
+    overflow-wrap: anywhere;
+    white-space: normal;
+}
+
+.flat-table th {
+    font-size: 14px;
+    line-height: 1.3;
+}
+
+.flat-table td.mono-cell {
+    font-size: 14px;
+}
+
+.cipher-workspace {
+    width: min(100%, 1120px);
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    flex: none;
+    gap: 16px;
+    padding: 18px 18px 48px;
+    overflow: visible;
+}
+
+.cipher-panel.active {
+    display: block;
+    height: auto;
+    min-height: 0;
+    flex: none;
+    overflow: visible;
+}
+
+.cipher-panel > .flat-card,
+.cipher-card {
+    height: auto;
+    min-height: 0;
+}
+
+.cipher-page-heading h2,
+.cipher-page-title,
+.cipher-workspace-title {
+    font-size: clamp(18px, 2vw, 20px);
+}
+
+.cipher-page-heading p:not(.eyebrow),
+.cipher-page-description,
+.cipher-workspace-description {
+    font-size: 15px;
+    line-height: 1.55;
+}
+
+.cipher-form {
+    gap: 16px;
+    padding: 16px;
+}
+
+.file-name {
+    overflow: visible;
+    font-size: 15px;
+    line-height: 1.45;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.file-hint,
+.upload-hint,
+.cipher-result-title,
+.cipher-key-control .form-label,
+.cipher-actions .action-hint {
+    font-size: 14px;
+    line-height: 1.45;
+}
+
+.file-picker,
+.cipher-actions .btn,
+.result-actions .btn {
+    min-height: 42px;
+    font-size: 15px;
+}
+
+#encryptOutput,
+#decryptOutput,
+.cipher-result .monospace-box,
+.cipher-output {
+    height: auto;
+    min-height: 140px;
+    max-height: none;
+    overflow: visible;
+    font-size: 15px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.cipher-status:not(.badge),
+.cipher-error,
+#encryptError,
+#decryptError {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+@media (max-width: 999px) {
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 14px 12px 48px;
+    }
+
+    .map-card {
+        height: auto;
+        min-height: 0;
+    }
+
+    .side-column {
+        gap: 16px;
+    }
+
+    .cipher-workspace {
+        width: 100%;
+        padding: 14px 12px 48px;
+    }
+}
+
+@media (max-width: 760px) {
+    .form-group-row,
+    .cipher-form-grid,
+    .cipher-input-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .card-header {
+        align-items: flex-start;
+        padding: 11px 14px;
+    }
+
+    .cipher-page-header,
+    .cipher-workspace-header {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .cipher-page-header > .cipher-tabs {
+        width: 100%;
+        flex: 0 0 auto;
+    }
+}
+
+@media (max-width: 620px) {
+    .dashboard-container {
+        gap: 12px;
+        padding: 10px 9px 48px;
+    }
+
+    .card-header {
+        padding: 11px 12px;
+    }
+
+    .card-title {
+        font-size: 18px;
+    }
+
+    .controls-form,
+    .result-card-body,
+    .route-export-content {
+        padding-inline: 12px;
+    }
+
+    .control-actions-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .control-actions-row .btn {
+        width: 100%;
+    }
+
+    #mapPagePanel .metrics-grid,
+    .metrics-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .metric-item {
+        min-width: 0;
+    }
+
+    .card-footer-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .card-footer-actions .btn-primary,
+    .card-footer-actions .btn-outline,
+    #downloadRouteButton {
+        width: 100%;
+        flex: 0 0 auto;
+    }
+
+    .route-export-actions .action-hint {
+        flex: 0 0 auto;
+        text-align: center;
+    }
+
+    .cipher-workspace {
+        gap: 12px;
+        padding: 10px 9px 48px;
+    }
+
+    .cipher-form {
+        gap: 12px;
+        padding: 12px;
+    }
+
+    .file-upload-zone {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .file-picker,
+    .file-name {
+        width: 100%;
+        text-align: center;
+    }
+
+    .cipher-actions,
+    .result-actions {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cipher-actions .btn,
+    .result-actions .btn,
+    #encryptButton,
+    #decryptButton {
+        width: 100%;
+    }
+}
+
+/* Bring secondary controls and navigation up to the same readable scale. */
+.brand-subtitle {
+    font-size: 14px;
+    line-height: 1.25;
+}
+
+.workflow-steps {
+    font-size: 13px;
+}
+
+.step-num {
+    font-size: 12px;
+}
+
+.system-status-badge {
+    font-size: 14px;
+    line-height: 1.25;
+}
+
+.page-tab,
+.cipher-tab {
+    min-height: 42px;
+    padding: 10px 16px;
+    font-size: 15px;
+    line-height: 1.25;
+}
+
+.map-legend {
+    font-size: 14px;
+}
+
+.weight-toggle-group .group-label {
+    font-size: 14px;
+}
+
+.btn-xs {
+    min-height: 32px;
+    height: auto;
+    padding-inline: 10px;
+    font-size: 14px;
+}
+
+.view-mode-tabs .tab-btn,
+.tab-btn {
+    width: auto;
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 14px;
+    line-height: 1.25;
+}
+
+.cipher-panel .card-title {
+    font-size: clamp(18px, 1.15vw, 20px);
+}
+
+.eyebrow {
+    font-size: 13px;
+}
+
+/* Final responsive balance for the Map workspace. */
+.dashboard-container {
+    grid-template-columns: minmax(0, 3fr) minmax(420px, 2fr);
+    align-items: start;
+}
+
+.map-canvas-wrapper {
+    height: clamp(360px, 42vw, 720px);
+    min-height: 360px;
+    max-height: none;
+    aspect-ratio: auto;
+}
+
+.computation-card,
+.computation-table-wrapper,
+.raw-log-container,
+.log-box {
+    min-height: 0;
+}
+
+.map-column {
+    align-self: start;
+}
+
+@media (min-width: 1024px) {
+    /* Keep the map card visible while the taller results column scrolls.
+       Stretch only the grid column (not the card), so sticky positioning has
+       enough containing-block height without making the map itself taller. */
+    .map-column {
+        align-self: stretch;
+    }
+
+    .map-card {
+        position: sticky;
+        top: 16px;
+        align-self: start;
+    }
+}
+
+@media (min-width: 1024px) and (max-width: 1439px) {
+    .dashboard-container {
+        gap: 12px;
+        padding: 12px 14px 44px;
+    }
+
+    .side-column {
+        gap: 14px;
+    }
+
+    .map-canvas-wrapper {
+        height: clamp(360px, 42vw, 640px);
+    }
+}
+
+@media (max-width: 1023px) {
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 14px 12px 48px;
+    }
+
+    .side-column {
+        display: contents;
+    }
+
+    .side-column > * {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .side-column > .controls-card {
+        order: 1;
+    }
+
+    .map-column {
+        order: 2;
+    }
+
+    .side-column > .results-subgrid {
+        order: 3;
+    }
+
+    .side-column > .computation-card {
+        order: 4;
+    }
+
+    .map-card {
+        position: static;
+    }
+
+    .map-canvas-wrapper {
+        height: clamp(320px, 72vw, 560px);
+        min-height: 320px;
+    }
+
+    .btn,
+    .file-picker,
+    .page-tab,
+    .cipher-tab,
+    .tab-btn,
+    .card-footer-actions .btn-primary,
+    .card-footer-actions .btn-outline,
+    .cipher-actions .btn,
+    .result-actions .btn {
+        min-height: 44px;
+    }
+
+    .cipher-key-control input[type="number"],
+    .cipher-key-input,
+    .form-input {
+        min-height: 44px;
+    }
+}
+
+@media (max-width: 760px) {
+    .view-mode-tabs {
+        display: grid;
+        width: 100%;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .view-mode-tabs .tab-btn,
+    .tab-btn {
+        width: auto;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 1023px) {
+    .page-navigation,
+    .page-tabs,
+    .workspace-main,
+    .page-panel,
+    .dashboard-container,
+    .map-column,
+    .side-column,
+    .flat-card,
+    .controls-form,
+    .form-group-row,
+    .form-group,
+    .select-wrapper,
+    .slider-group,
+    .info-callout,
+    .control-actions-row,
+    .result-card-body,
+    .route-export-content,
+    .route-nodes-sequence,
+    .computation-table-wrapper {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .form-select,
+    .form-input,
+    .form-range {
+        max-width: 100%;
+    }
+
+    .flat-card,
+    .page-tabs {
+        max-width: calc(100vw - 24px);
+    }
+
+    .page-tabs {
+        width: 100%;
+    }
+
+    .page-tab,
+    .cipher-tab {
+        min-width: 0;
+        padding-inline: 10px;
+        overflow-wrap: anywhere;
+    }
+
+    .card-header > *,
+    .card-actions,
+    .weight-toggle-group,
+    .slider-header > *,
+    .info-callout > *,
+    .route-export-actions > * {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    .card-actions,
+    .weight-toggle-group {
+        flex-wrap: wrap;
+    }
+
+    .callout-text,
+    .slider-value-display,
+    .action-hint {
+        min-width: 0;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+
+    .slider-header {
+        min-width: 0;
+    }
+}
+
+@media (max-width: 760px) {
+    .card-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .weight-toggle-group {
+        width: 100%;
+    }
+
+    .card-header > .badge {
+        flex: 0 1 auto;
+    }
+}
+
+@media (max-width: 620px) {
+    .flat-card,
+    .page-tabs {
+        max-width: calc(100vw - 18px);
+    }
+}
+
+/* ==========================================================================
+   Compact manual-text Cipher workspace
+   ========================================================================== */
+
+.cipher-page-header {
+    flex-direction: row;
+}
+
+.cipher-page-header > .cipher-tabs {
+    width: min(100%, 280px);
+    height: auto;
+    min-height: 0;
+    flex: 0 0 auto;
+    align-self: center;
+}
+
+.cipher-tabs {
+    height: auto;
+    min-height: 0;
+    align-items: center;
+}
+
+.cipher-tab {
+    width: 100%;
+    height: 46px;
+    min-height: 46px;
+    max-height: 46px;
+    padding: 9px 14px;
+    line-height: 1.2;
+}
+
+.cipher-panel > .flat-card,
+.cipher-card {
+    min-height: 0;
+}
+
+.cipher-editor-grid {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: minmax(0, 1.45fr) minmax(230px, 0.55fr);
+    gap: 12px;
+    align-items: start;
+}
+
+.cipher-text-source {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    border: 1px solid rgba(50, 68, 94, 0.82);
+    border-radius: 11px;
+    background: rgba(8, 14, 24, 0.68);
+}
+
+.cipher-text-source > .form-label {
+    font-size: 15px;
+}
+
+.cipher-textarea {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    min-height: 170px;
+    resize: vertical;
+    padding: 12px 13px;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 9px;
+    outline: none;
+    color: var(--color-text-primary);
+    background: #091221;
+    font-family: var(--font-mono);
+    font-size: 16px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    transition: border-color var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.cipher-textarea::placeholder {
+    color: var(--color-text-muted);
+}
+
+.cipher-textarea:hover:not(:disabled) {
+    border-color: #435570;
+    background: #0C1625;
+}
+
+.cipher-textarea:focus {
+    border-color: #8B7CF6;
+    box-shadow: 0 0 0 3px rgba(139, 124, 246, 0.13);
+}
+
+.cipher-textarea:disabled {
+    color: var(--color-text-light);
+    background: #0B111C;
+    cursor: wait;
+}
+
+.compact-file-upload {
+    min-height: 0;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-content: center;
+    padding: 10px;
+}
+
+.compact-file-upload .file-picker {
+    min-height: 40px;
+    font-size: 14px;
+}
+
+.compact-file-upload .file-name,
+.compact-file-upload .file-hint {
+    font-size: 14px;
+}
+
+.cipher-editor-grid > .cipher-key-control {
+    width: 100%;
+    height: auto;
+    min-height: 148px;
+    align-self: start;
+}
+
+.cipher-actions .btn,
+.result-actions .btn {
+    min-height: 44px;
+    padding: 9px 14px;
+    font-size: 15px;
+}
+
+#useInDecryptButton {
+    border-color: rgba(45, 212, 191, 0.32);
+    color: #BCEFE7;
+}
+
+#useInDecryptButton:hover:not(:disabled) {
+    border-color: rgba(45, 212, 191, 0.56);
+    background: rgba(45, 212, 191, 0.08);
+}
+
+@media (max-width: 760px) {
+    .cipher-page-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .cipher-page-header > .cipher-tabs {
+        width: min(100%, 320px);
+        flex: 0 0 auto;
+        align-self: flex-start;
+    }
+
+    .cipher-editor-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cipher-editor-grid > .cipher-key-control {
+        min-height: 0;
+    }
+}
+
+@media (max-width: 620px) {
+    .cipher-page-header > .cipher-tabs {
+        width: 100%;
+        max-width: 320px;
+    }
+
+    .cipher-tab {
+        height: 44px;
+        min-height: 44px;
+        max-height: 44px;
+        padding-inline: 10px;
+        font-size: 14px;
+    }
+
+    .cipher-text-source {
+        padding: 11px;
+    }
+
+    .cipher-textarea {
+        min-height: 150px;
+    }
+
+    .compact-file-upload {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .result-actions {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

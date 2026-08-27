@@ -72,6 +72,7 @@ const encryptPanel = document.querySelector("#encryptPanel");
 const decryptPanel = document.querySelector("#decryptPanel");
 
 // Encrypt workflow controls
+const encryptTextInput = document.querySelector("#encryptTextInput");
 const encryptFileInput = document.querySelector("#encryptFileInput");
 const encryptFileName = document.querySelector("#encryptFileName");
 const encryptCipherKey = document.querySelector("#encryptCipherKey");
@@ -82,8 +83,10 @@ const encryptError = document.querySelector("#encryptError");
 const encryptStatus = document.querySelector("#encryptStatus");
 const copyCiphertextButton = document.querySelector("#copyCiphertextButton");
 const downloadEncryptedButton = document.querySelector("#downloadEncryptedButton");
+const useInDecryptButton = document.querySelector("#useInDecryptButton");
 
 // Decrypt workflow controls
+const decryptTextInput = document.querySelector("#decryptTextInput");
 const decryptFileInput = document.querySelector("#decryptFileInput");
 const decryptFileName = document.querySelector("#decryptFileName");
 const decryptCipherKey = document.querySelector("#decryptCipherKey");
@@ -798,27 +801,42 @@ function resetEncryptResult({ preserveError = false } = {}) {
     if (encryptOutput) encryptOutput.textContent = "Ciphertext will appear here after you press Encrypt.";
     if (copyCiphertextButton) copyCiphertextButton.disabled = true;
     if (downloadEncryptedButton) downloadEncryptedButton.disabled = true;
+    if (useInDecryptButton) useInDecryptButton.disabled = true;
     if (!preserveError) setError(encryptError);
 }
 
 function resetDecryptResult({ preserveError = false } = {}) {
     cipherState.decrypt.result = null;
-    if (decryptOutput) decryptOutput.textContent = "The restored route will appear here after you press Decrypt.";
+    if (decryptOutput) decryptOutput.textContent = "The original plaintext will appear here after you press Decrypt.";
     if (copyDecryptedButton) copyDecryptedButton.disabled = true;
     if (downloadDecryptedButton) downloadDecryptedButton.disabled = true;
     if (!preserveError) setError(decryptError);
 }
 
+function hasCipherInput(kind) {
+    const textInput = kind === "encrypt" ? encryptTextInput : decryptTextInput;
+    return Boolean(textInput?.value.trim() || cipherState[kind].file);
+}
+
+function syncCipherActionState(kind) {
+    const actionButton = kind === "encrypt" ? encryptButton : decryptButton;
+    if (actionButton) {
+        actionButton.disabled = cipherState[kind].busy;
+    }
+}
+
 function setCipherBusy(kind, isBusy) {
     const encrypting = kind === "encrypt";
+    const textInput = encrypting ? encryptTextInput : decryptTextInput;
     const fileInput = encrypting ? encryptFileInput : decryptFileInput;
     const keyInput = encrypting ? encryptCipherKey : decryptCipherKey;
     const actionButton = encrypting ? encryptButton : decryptButton;
     cipherState[kind].busy = isBusy;
+    if (textInput) textInput.disabled = isBusy;
     if (fileInput) fileInput.disabled = isBusy;
     if (keyInput) keyInput.disabled = isBusy;
     if (actionButton) {
-        actionButton.disabled = isBusy || !cipherState[kind].file;
+        actionButton.disabled = isBusy;
         actionButton.classList.toggle("is-loading", isBusy);
         actionButton.setAttribute("aria-busy", String(isBusy));
     }
@@ -834,7 +852,6 @@ function selectCipherFile(kind) {
     const filename = encrypting ? encryptFileName : decryptFileName;
     const errorBox = encrypting ? encryptError : decryptError;
     const status = encrypting ? encryptStatus : decryptStatus;
-    const actionButton = encrypting ? encryptButton : decryptButton;
     const state = cipherState[kind];
     const uploadZone = input?.closest(".file-upload-zone");
 
@@ -851,8 +868,8 @@ function selectCipherFile(kind) {
             filename.dataset.empty = "true";
         }
         uploadZone?.classList.remove("has-file", "is-selected");
-        if (actionButton) actionButton.disabled = true;
-        setStatus(status, "Awaiting file", "neutral");
+        syncCipherActionState(kind);
+        setStatus(status, hasCipherInput(kind) ? `Ready to ${kind}` : "Awaiting input", "neutral");
         return;
     }
 
@@ -864,7 +881,7 @@ function selectCipherFile(kind) {
         }
         uploadZone?.classList.remove("has-file", "is-selected");
         if (input) input.value = "";
-        if (actionButton) actionButton.disabled = true;
+        syncCipherActionState(kind);
         setError(errorBox, "Invalid file type. Select a .txt file.");
         setStatus(status, "Invalid file", "error");
         return;
@@ -877,20 +894,59 @@ function selectCipherFile(kind) {
         filename.dataset.empty = "false";
     }
     uploadZone?.classList.add("has-file", "is-selected");
-    // Clear the native input after capturing the File so choosing the same file
-    // again still emits a change event. The workflow keeps its own File state.
+    // Keep the File in workflow state while allowing the same file to be
+    // selected again and still emit a native change event.
     if (input) input.value = "";
-    if (actionButton) actionButton.disabled = false;
+    syncCipherActionState(kind);
     setError(errorBox);
     setStatus(status, encrypting ? "Ready to encrypt" : "Ready to decrypt", "primary");
+}
+
+function clearSelectedCipherFile(kind) {
+    const encrypting = kind === "encrypt";
+    const input = encrypting ? encryptFileInput : decryptFileInput;
+    const filename = encrypting ? encryptFileName : decryptFileName;
+    const uploadZone = input?.closest(".file-upload-zone");
+    cipherState[kind].file = null;
+    if (input) input.value = "";
+    if (filename) {
+        filename.textContent = "No file selected";
+        filename.classList.add("is-empty");
+        filename.dataset.empty = "true";
+    }
+    uploadZone?.classList.remove("has-file", "is-selected");
+}
+
+async function resolveCipherSource(kind) {
+    const encrypting = kind === "encrypt";
+    const textInput = encrypting ? encryptTextInput : decryptTextInput;
+    const state = cipherState[kind];
+    const typedText = textInput?.value ?? "";
+
+    if (typedText.trim()) {
+        return { content: typedText, filename: null };
+    }
+    if (!state.file) {
+        throw new Error(encrypting
+            ? "Enter plaintext or select a plaintext .txt file."
+            : "Enter ciphertext or select an encrypted .txt file.");
+    }
+
+    const content = await state.file.text();
+    if (!content.trim()) {
+        throw new Error(encrypting
+            ? "The selected plaintext file is empty."
+            : "The selected encrypted file is empty.");
+    }
+    return { content, filename: state.file.name };
 }
 
 async function runEncrypt() {
     const state = cipherState.encrypt;
     if (state.busy) return;
-    if (!state.file) {
-        setError(encryptError, "Select a route .txt file before encrypting.");
-        setStatus(encryptStatus, "File required", "error");
+    if (!hasCipherInput("encrypt")) {
+        setError(encryptError, "Enter plaintext or select a plaintext .txt file.");
+        setStatus(encryptStatus, "Plaintext required", "error");
         return;
     }
 
@@ -908,22 +964,20 @@ async function runEncrypt() {
     const operation = ++state.operation;
     resetEncryptResult();
     setCipherBusy("encrypt", true);
-    setStatus(encryptStatus, "Encrypting…", "primary");
+    setStatus(encryptStatus, "Encrypting...", "primary");
 
     try {
-        const content = await state.file.text();
-        if (!content.trim()) throw new Error("The selected route file is empty.");
-        const result = await postJson("/api/encrypt", {
-            plaintext: content,
-            shift,
-            filename: state.file.name,
-        });
+        const source = await resolveCipherSource("encrypt");
+        const payload = { plaintext: source.content, shift };
+        if (source.filename) payload.filename = source.filename;
+        const result = await postJson("/api/encrypt-text", payload);
         if (operation !== state.operation) return;
 
         state.result = result;
-        if (encryptOutput) encryptOutput.textContent = `Ciphertext:\n${result.ciphertext}`;
+        if (encryptOutput) encryptOutput.textContent = result.ciphertext;
         if (copyCiphertextButton) copyCiphertextButton.disabled = false;
         if (downloadEncryptedButton) downloadEncryptedButton.disabled = false;
+        if (useInDecryptButton) useInDecryptButton.disabled = false;
         setStatus(encryptStatus, "Encryption complete", "success");
     } catch (error) {
         if (operation !== state.operation) return;
@@ -937,9 +991,9 @@ async function runEncrypt() {
 async function runDecrypt() {
     const state = cipherState.decrypt;
     if (state.busy) return;
-    if (!state.file) {
-        setError(decryptError, "Select an encrypted .txt file before decrypting.");
-        setStatus(decryptStatus, "File required", "error");
+    if (!hasCipherInput("decrypt")) {
+        setError(decryptError, "Enter ciphertext or select an encrypted .txt file.");
+        setStatus(decryptStatus, "Ciphertext required", "error");
         return;
     }
 
@@ -957,30 +1011,17 @@ async function runDecrypt() {
     const operation = ++state.operation;
     resetDecryptResult();
     setCipherBusy("decrypt", true);
-    setStatus(decryptStatus, "Decrypting…", "primary");
+    setStatus(decryptStatus, "Decrypting...", "primary");
 
     try {
-        const content = await state.file.text();
-        if (!content.trim()) throw new Error("The selected encrypted file is empty.");
-        const result = await postJson("/api/decrypt", {
-            ciphertext: content,
-            shift,
-            filename: state.file.name,
-        });
+        const source = await resolveCipherSource("decrypt");
+        const payload = { ciphertext: source.content, shift };
+        if (source.filename) payload.filename = source.filename;
+        const result = await postJson("/api/decrypt-text", payload);
         if (operation !== state.operation) return;
 
         state.result = result;
-        const weights = result.edge_weights.map((weight) => Number(weight).toFixed(1)).join(", ") || "None";
-        if (decryptOutput) {
-            decryptOutput.textContent = [
-                "Decrypted route:",
-                result.decrypted_message,
-                "",
-                `Restored path: ${result.path.join(" → ")}`,
-                `Edge weights: ${weights}`,
-                `Total distance: ${Number(result.total_cost).toFixed(1)}`,
-            ].join("\n");
-        }
+        if (decryptOutput) decryptOutput.textContent = result.decrypted_message;
         if (copyDecryptedButton) copyDecryptedButton.disabled = false;
         if (downloadDecryptedButton) downloadDecryptedButton.disabled = false;
         setStatus(decryptStatus, "Decryption complete", "success");
@@ -991,6 +1032,41 @@ async function runDecrypt() {
     } finally {
         if (operation === state.operation) setCipherBusy("decrypt", false);
     }
+}
+
+function useCiphertextInDecrypt() {
+    const result = cipherState.encrypt.result;
+    if (!result?.ciphertext || !decryptTextInput || !decryptCipherKey) return;
+
+    cipherState.decrypt.operation += 1;
+    clearSelectedCipherFile("decrypt");
+    decryptTextInput.value = result.ciphertext;
+    decryptCipherKey.value = String(result.shift);
+    updateRangeFill(decryptCipherKey, decryptCipherKeyValue);
+    resetDecryptResult();
+    syncCipherActionState("decrypt");
+    setError(decryptError);
+    setStatus(decryptStatus, "Ciphertext ready - press Decrypt", "primary");
+    showDecryptPanel();
+    decryptTextInput.focus();
+}
+
+function handleCipherTextInput(kind) {
+    const encrypting = kind === "encrypt";
+    const status = encrypting ? encryptStatus : decryptStatus;
+    const errorBox = encrypting ? encryptError : decryptError;
+    cipherState[kind].operation += 1;
+    if (encrypting) resetEncryptResult();
+    else resetDecryptResult();
+    syncCipherActionState(kind);
+    setError(errorBox);
+    setStatus(
+        status,
+        hasCipherInput(kind)
+            ? `Input changed - press ${encrypting ? "Encrypt" : "Decrypt"}`
+            : "Awaiting input",
+        "neutral",
+    );
 }
 
 function populateNodeSelectors(labels) {
@@ -1077,7 +1153,7 @@ function downloadEncryptedResult() {
     const state = cipherState.encrypt;
     const result = state.result;
     if (!result?.ciphertext || state.downloadBusy) return;
-    const baseName = sourceBaseName(state.file, "route");
+    const baseName = sourceBaseName(state.file, "message");
     state.downloadBusy = true;
     if (downloadEncryptedButton) {
         downloadEncryptedButton.disabled = true;
@@ -1106,7 +1182,7 @@ function downloadDecryptedResult() {
     const state = cipherState.decrypt;
     const result = state.result;
     if (!result?.decrypted_message || state.downloadBusy) return;
-    const baseName = sourceBaseName(state.file, "route_encrypted").replace(/_encrypted$/i, "");
+    const baseName = sourceBaseName(state.file, "message").replace(/_encrypted$/i, "");
     state.downloadBusy = true;
     if (downloadDecryptedButton) {
         downloadDecryptedButton.disabled = true;
@@ -1114,7 +1190,7 @@ function downloadDecryptedResult() {
         downloadDecryptedButton.setAttribute("aria-busy", "true");
     }
     try {
-        downloadTextFile(`${baseName}_decrypted.txt`, `Route:\n${result.decrypted_message}`);
+        downloadTextFile(`${baseName}_decrypted.txt`, `Plaintext:\n${result.decrypted_message}`);
         setStatus(decryptStatus, "Decrypted file downloaded", "success");
     } catch (error) {
         setError(decryptError, `Download failed: ${error.message}`);
@@ -1247,12 +1323,15 @@ bindTabKeyboard([encryptTab, decryptTab], (index) => {
 
 encryptFileInput?.addEventListener("change", () => selectCipherFile("encrypt"));
 decryptFileInput?.addEventListener("change", () => selectCipherFile("decrypt"));
+encryptTextInput?.addEventListener("input", () => handleCipherTextInput("encrypt"));
+decryptTextInput?.addEventListener("input", () => handleCipherTextInput("decrypt"));
 encryptButton?.addEventListener("click", runEncrypt);
 decryptButton?.addEventListener("click", runDecrypt);
 copyCiphertextButton?.addEventListener("click", copyCiphertext);
 copyDecryptedButton?.addEventListener("click", copyDecryptedResult);
 downloadEncryptedButton?.addEventListener("click", downloadEncryptedResult);
 downloadDecryptedButton?.addEventListener("click", downloadDecryptedResult);
+useInDecryptButton?.addEventListener("click", useCiphertextInDecrypt);
 
 showDistanceButton.addEventListener("click", () => {
     showWeights = true;
@@ -1295,16 +1374,16 @@ encryptCipherKey?.addEventListener("input", () => {
     cipherState.encrypt.operation += 1;
     updateRangeFill(encryptCipherKey, encryptCipherKeyValue);
     resetEncryptResult();
-    if (encryptButton) encryptButton.disabled = !cipherState.encrypt.file;
-    setStatus(encryptStatus, cipherState.encrypt.file ? "Shift changed — press Encrypt" : "Awaiting file", "neutral");
+    syncCipherActionState("encrypt");
+    setStatus(encryptStatus, hasCipherInput("encrypt") ? "Shift changed - press Encrypt" : "Awaiting input", "neutral");
 });
 
 decryptCipherKey?.addEventListener("input", () => {
     cipherState.decrypt.operation += 1;
     updateRangeFill(decryptCipherKey, decryptCipherKeyValue);
     resetDecryptResult();
-    if (decryptButton) decryptButton.disabled = !cipherState.decrypt.file;
-    setStatus(decryptStatus, cipherState.decrypt.file ? "Shift changed — press Decrypt" : "Awaiting file", "neutral");
+    syncCipherActionState("decrypt");
+    setStatus(decryptStatus, hasCipherInput("decrypt") ? "Shift changed - press Decrypt" : "Awaiting input", "neutral");
 });
 
 // Tab switching for Computation Log

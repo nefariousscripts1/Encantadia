@@ -133,6 +133,88 @@ class CipherRouteEndpointTests(unittest.TestCase):
             self.assertEqual(missing_response.status_code, 400)
             self.assertIn("shift", missing_response.get_json()["error"].lower())
 
+    def test_manual_text_endpoints_round_trip_without_route_parsing(self):
+        cases = (
+            ("HELLO WORLD", 3, "KHOOR ZRUOG"),
+            ("Hello World 123!", 3, "Khoor Zruog 456!"),
+            ("Abc xyz 789!? @#", 3, "Def abc 012!? @#"),
+            ("Mixed CASE\nSecond line.", 25, caesar_encrypt("Mixed CASE\nSecond line.", 25)),
+        )
+
+        for plaintext, shift, expected_ciphertext in cases:
+            with self.subTest(plaintext=plaintext, shift=shift):
+                encrypted_response = self.client.post(
+                    "/api/encrypt-text",
+                    json={"plaintext": plaintext, "shift": shift},
+                )
+                self.assertEqual(encrypted_response.status_code, 200)
+                encrypted = encrypted_response.get_json()
+                self.assertEqual(encrypted["ciphertext"], expected_ciphertext)
+                self.assertEqual(encrypted["plaintext"], plaintext)
+                self.assertEqual(encrypted["shift"], shift)
+
+                decrypted_response = self.client.post(
+                    "/api/decrypt-text",
+                    json={"ciphertext": encrypted["ciphertext"], "shift": shift},
+                )
+                self.assertEqual(decrypted_response.status_code, 200)
+                decrypted = decrypted_response.get_json()
+                self.assertEqual(decrypted["decrypted_message"], plaintext)
+                self.assertEqual(decrypted["plaintext"], plaintext)
+                self.assertEqual(decrypted["shift"], shift)
+
+    def test_manual_text_upload_labels_validation_and_shift_boundaries(self):
+        encrypted_response = self.client.post(
+            "/api/encrypt-text",
+            json={
+                "plaintext": "Plaintext:\nHELLO WORLD",
+                "shift": "03",
+                "filename": "plain.TXT",
+            },
+        )
+        self.assertEqual(encrypted_response.status_code, 200)
+        self.assertEqual(encrypted_response.get_json()["ciphertext"], "KHOOR ZRUOG")
+
+        decrypted_response = self.client.post(
+            "/api/decrypt-text",
+            json={
+                "ciphertext": "Ciphertext:\r\nKHOOR ZRUOG",
+                "shift": 3,
+                "filename": "encrypted.txt",
+            },
+        )
+        self.assertEqual(decrypted_response.status_code, 200)
+        self.assertEqual(decrypted_response.get_json()["plaintext"], "HELLO WORLD")
+
+        for endpoint, field in (
+            ("/api/encrypt-text", "plaintext"),
+            ("/api/decrypt-text", "ciphertext"),
+        ):
+            for empty_value in ("", "   \r\n"):
+                with self.subTest(endpoint=endpoint, empty_value=repr(empty_value)):
+                    response = self.client.post(
+                        endpoint,
+                        json={field: empty_value, "shift": 3},
+                    )
+                    self.assertEqual(response.status_code, 400)
+                    self.assertIn("empty", response.get_json()["error"].lower())
+
+            for invalid_shift in (-1, 26, "3.5", True, None):
+                with self.subTest(endpoint=endpoint, invalid_shift=invalid_shift):
+                    response = self.client.post(
+                        endpoint,
+                        json={field: "HELLO", "shift": invalid_shift},
+                    )
+                    self.assertEqual(response.status_code, 400)
+                    self.assertIn("shift", response.get_json()["error"].lower())
+
+            invalid_file_response = self.client.post(
+                endpoint,
+                json={field: "HELLO", "shift": 3, "filename": "message.csv"},
+            )
+            self.assertEqual(invalid_file_response.status_code, 400)
+            self.assertIn(".txt", invalid_file_response.get_json()["error"])
+
     def test_invalid_request_shapes_payload_types_and_file_extensions(self):
         for endpoint in ("/api/encrypt", "/api/decrypt"):
             response = self.client.post(endpoint, json=["not", "an", "object"])

@@ -39,13 +39,16 @@ class SeparatedWorkspaceUiTests(unittest.TestCase):
             "routeVisitedNodesDisplay",
             "encryptFileInput",
             "encryptFileName",
+            "encryptTextInput",
             "encryptCipherKey",
             "encryptButton",
             "encryptOutput",
             "copyCiphertextButton",
             "downloadEncryptedButton",
+            "useInDecryptButton",
             "decryptFileInput",
             "decryptFileName",
+            "decryptTextInput",
             "decryptCipherKey",
             "decryptButton",
             "decryptOutput",
@@ -83,15 +86,23 @@ class SeparatedWorkspaceUiTests(unittest.TestCase):
         self.assertIn("mapCiphertextResult", self.javascript)
         self.assertIn('postJson("/api/encrypt"', self.javascript)
         self.assertIn('downloadTextFile(filename, `Ciphertext:', self.javascript)
-        self.assertIn('postJson("/api/decrypt"', self.javascript)
+        self.assertIn('postJson("/api/encrypt-text"', self.javascript)
+        self.assertIn('postJson("/api/decrypt-text"', self.javascript)
         self.assertIn("cipherState.encrypt", self.javascript)
         self.assertIn("cipherState.decrypt", self.javascript)
+        self.assertIn("useCiphertextInDecrypt", self.javascript)
         self.assertIn("URL.revokeObjectURL", self.javascript)
         self.assertIn('accept=".txt,text/plain"', self.html)
+        self.assertIn('placeholder="Enter text to encrypt..."', self.html)
 
     def test_uploads_only_select_files_and_actions_are_explicit(self):
         selection_function = self.javascript[
             self.javascript.index("function selectCipherFile") : self.javascript.index(
+                "function clearSelectedCipherFile"
+            )
+        ]
+        source_function = self.javascript[
+            self.javascript.index("async function resolveCipherSource") : self.javascript.index(
                 "async function runEncrypt"
             )
         ]
@@ -102,20 +113,27 @@ class SeparatedWorkspaceUiTests(unittest.TestCase):
         ]
         decrypt_function = self.javascript[
             self.javascript.index("async function runDecrypt") : self.javascript.index(
-                "function populateNodeSelectors"
+                "function useCiphertextInDecrypt"
+            )
+        ]
+        transfer_function = self.javascript[
+            self.javascript.index("function useCiphertextInDecrypt") : self.javascript.index(
+                "function handleCipherTextInput"
             )
         ]
 
         self.assertNotIn("state.file.text()", selection_function)
-        self.assertNotIn("postJson(\"/api/encrypt\"", selection_function)
-        self.assertNotIn("postJson(\"/api/decrypt\"", selection_function)
-        self.assertIn("const content = await state.file.text()", encrypt_function)
-        self.assertIn("const content = await state.file.text()", decrypt_function)
-        self.assertIn("postJson(\"/api/encrypt\"", encrypt_function)
-        self.assertIn("postJson(\"/api/decrypt\"", decrypt_function)
+        self.assertNotIn("postJson(", selection_function)
+        self.assertIn("const content = await state.file.text()", source_function)
+        self.assertIn("postJson(\"/api/encrypt-text\"", encrypt_function)
+        self.assertIn("postJson(\"/api/decrypt-text\"", decrypt_function)
         self.assertIn('if (state.busy) return;', encrypt_function)
         self.assertIn('if (state.busy) return;', decrypt_function)
         self.assertIn('if (input) input.value = "";', selection_function)
+        self.assertIn("decryptTextInput.value = result.ciphertext", transfer_function)
+        self.assertIn("decryptCipherKey.value = String(result.shift)", transfer_function)
+        self.assertIn("showDecryptPanel()", transfer_function)
+        self.assertNotIn("runDecrypt()", transfer_function)
         self.assertIn('id="runButton" class="btn btn-primary btn-action-main" type="button" disabled', self.html)
         self.assertIn("routeDownloadBusy", self.javascript)
         self.assertIn("downloadBusy", self.javascript)

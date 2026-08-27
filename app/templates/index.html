@@ -446,15 +446,25 @@
                     <article class="flat-card cipher-card">
                         <div class="card-header">
                             <div class="header-title-wrap">
-                                <h2 class="card-title">Encrypt Route File</h2>
+                                <h2 class="card-title">Encrypt Text</h2>
                                 <span class="meta-tag compact-tag">Caesar Cipher</span>
                             </div>
-                            <span id="encryptStatus" class="badge badge-neutral cipher-status" role="status" aria-live="polite">Awaiting file</span>
+                            <span id="encryptStatus" class="badge badge-neutral cipher-status" role="status" aria-live="polite">Awaiting input</span>
                         </div>
 
                         <form id="encryptForm" class="cipher-form" onsubmit="return false;">
-                            <div class="cipher-form-grid">
-                                <div class="file-upload-zone">
+                            <div class="cipher-editor-grid">
+                                <div class="cipher-text-source">
+                                    <label class="form-label" for="encryptTextInput">Plaintext</label>
+                                    <textarea
+                                        id="encryptTextInput"
+                                        class="cipher-textarea"
+                                        rows="7"
+                                        placeholder="Enter text to encrypt..."
+                                        aria-describedby="encryptFileHint"
+                                    ></textarea>
+
+                                    <div class="file-upload-zone compact-file-upload">
                                     <input id="encryptFileInput" class="file-input" type="file" accept=".txt,text/plain" aria-describedby="encryptFileHint">
                                     <label class="file-picker" for="encryptFileInput">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -463,10 +473,11 @@
                                             <line x1="12" y1="18" x2="12" y2="11"></line>
                                             <polyline points="9 14 12 11 15 14"></polyline>
                                         </svg>
-                                        Choose route .txt
+                                        Upload plaintext .txt
                                     </label>
                                     <span id="encryptFileName" class="file-name is-empty" data-empty="true">No file selected</span>
-                                    <span id="encryptFileHint" class="file-hint">Upload the plaintext Route file downloaded from Map. Nothing is read until Encrypt is pressed.</span>
+                                    <span id="encryptFileHint" class="file-hint">Typed text takes priority. A selected file is read only after Encrypt is pressed.</span>
+                                    </div>
                                 </div>
 
                                 <div class="cipher-key-control">
@@ -480,7 +491,7 @@
                             </div>
 
                             <div class="cipher-actions">
-                                <button id="encryptButton" class="btn btn-primary" type="button" disabled aria-busy="false">
+                                <button id="encryptButton" class="btn btn-primary" type="button" aria-busy="false">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
                                     <span>Encrypt</span>
                                 </button>
@@ -490,13 +501,14 @@
 
                             <div class="cipher-result">
                                 <div class="cipher-result-header">
-                                    <span class="cipher-result-title">Ciphertext output</span>
+                                    <span class="cipher-result-title">Encrypted Result</span>
                                     <span class="meta-tag compact-tag">.txt payload</span>
                                 </div>
                                 <pre id="encryptOutput" class="monospace-box cipher-output" tabindex="0" aria-live="polite">Ciphertext will appear here after you press Encrypt.</pre>
                                 <div class="result-actions">
                                     <button id="copyCiphertextButton" class="btn btn-outline btn-sm" type="button" disabled>Copy Ciphertext</button>
-                                    <button id="downloadEncryptedButton" class="btn btn-primary btn-sm" type="button" disabled>Download Encrypted File</button>
+                                    <button id="downloadEncryptedButton" class="btn btn-primary btn-sm" type="button" disabled>Download as .txt</button>
+                                    <button id="useInDecryptButton" class="btn btn-outline btn-sm" type="button" disabled>Use in Decrypt</button>
                                 </div>
                             </div>
                         </form>
@@ -514,15 +526,26 @@
                     <article class="flat-card cipher-card">
                         <div class="card-header">
                             <div class="header-title-wrap">
-                                <h2 class="card-title">Decrypt Route File</h2>
+                                <h2 class="card-title">Decrypt Text</h2>
                                 <span class="meta-tag compact-tag">Caesar Cipher</span>
                             </div>
-                            <span id="decryptStatus" class="badge badge-neutral cipher-status" role="status" aria-live="polite">Awaiting file</span>
+                            <span id="decryptStatus" class="badge badge-neutral cipher-status" role="status" aria-live="polite">Awaiting input</span>
                         </div>
 
                         <form id="decryptForm" class="cipher-form" onsubmit="return false;">
-                            <div class="cipher-form-grid">
-                                <div class="file-upload-zone">
+                            <div class="cipher-editor-grid">
+                                <div class="cipher-text-source">
+                                    <label class="form-label" for="decryptTextInput">Ciphertext</label>
+                                    <textarea
+                                        id="decryptTextInput"
+                                        class="cipher-textarea"
+                                        rows="7"
+                                        placeholder="Enter or paste ciphertext..."
+                                        aria-describedby="decryptFileHint"
+                                        spellcheck="false"
+                                    ></textarea>
+
+                                    <div class="file-upload-zone compact-file-upload">
                                     <input id="decryptFileInput" class="file-input" type="file" accept=".txt,text/plain" aria-describedby="decryptFileHint">
                                     <label class="file-picker" for="decryptFileInput">
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -533,7 +556,8 @@
                                         Choose encrypted .txt
                                     </label>
                                     <span id="decryptFileName" class="file-name is-empty" data-empty="true">No file selected</span>
-                                    <span id="decryptFileHint" class="file-hint">Upload a Ciphertext file. The optional Ciphertext: label is ignored when Decrypt is pressed.</span>
+                                    <span id="decryptFileHint" class="file-hint">Paste ciphertext above or upload a .txt file. Nothing is decrypted until Decrypt is pressed.</span>
+                                    </div>
                                 </div>
 
                                 <div class="cipher-key-control">
@@ -547,7 +571,7 @@
                             </div>
 
                             <div class="cipher-actions">
-                                <button id="decryptButton" class="btn btn-primary" type="button" disabled aria-busy="false">
+                                <button id="decryptButton" class="btn btn-primary" type="button" aria-busy="false">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"></rect><path d="M7 11V7a5 5 0 0 1 9.9-1"></path><path d="M17 6V3l3 3-3 3"></path></svg>
                                     <span>Decrypt</span>
                                 </button>
@@ -557,10 +581,10 @@
 
                             <div class="cipher-result">
                                 <div class="cipher-result-header">
-                                    <span class="cipher-result-title">Restored route</span>
+                                    <span class="cipher-result-title">Decrypted Result</span>
                                     <span class="meta-tag compact-tag">Plaintext</span>
                                 </div>
-                                <pre id="decryptOutput" class="monospace-box cipher-output decrypted-output" tabindex="0" aria-live="polite">The restored route will appear here after you press Decrypt.</pre>
+                                <pre id="decryptOutput" class="monospace-box cipher-output decrypted-output" tabindex="0" aria-live="polite">The original plaintext will appear here after you press Decrypt.</pre>
                                 <div class="result-actions">
                                     <button id="copyDecryptedButton" class="btn btn-outline btn-sm" type="button" disabled>Copy Result</button>
                                     <button id="downloadDecryptedButton" class="btn btn-primary btn-sm" type="button" disabled>Download Decrypted File</button>

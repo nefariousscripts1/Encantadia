@@ -92,6 +92,16 @@ def _validate_optional_filename(data: dict[str, Any]) -> Any | None:
     return None
 
 
+def _remove_optional_text_label(text: str, label: str) -> str:
+    """Remove an app-generated text-file label without changing user text."""
+    normalized = text.lstrip("\ufeff")
+    label_pattern = re.compile(
+        rf"^{re.escape(label)}\s*:\s*(?:\r?\n)?",
+        re.IGNORECASE,
+    )
+    return label_pattern.sub("", normalized, count=1)
+
+
 def _derive_visited_nodes(start: str, astar_result: dict[str, Any]) -> list[str]:
     """Derive stable node order from the existing A* relaxation trace."""
     visited: list[str] = []
@@ -264,6 +274,71 @@ def decrypt_route():
         path=parsed_route["path"],
         edge_weights=parsed_route["edge_weights"],
         total_cost=parsed_route["total_cost"],
+        shift=shift,
+        cipher_key=shift,
+    )
+
+
+@main.post("/api/encrypt-text")
+def encrypt_text_payload():
+    """Encrypt user-entered or uploaded text with the existing Caesar cipher."""
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify(error="Request body must be a JSON object."), 400
+
+    filename_error = _validate_optional_filename(data)
+    if filename_error:
+        return filename_error
+
+    plaintext = data.get("plaintext")
+    if not isinstance(plaintext, str):
+        return jsonify(error="Plaintext must be a string."), 400
+
+    shift, error = _extract_shift(data)
+    if error:
+        return error
+
+    normalized_plaintext = _remove_optional_text_label(plaintext, "Plaintext")
+    if not normalized_plaintext.strip():
+        return jsonify(error="Plaintext cannot be empty."), 400
+
+    ciphertext = caesar_encrypt(normalized_plaintext, shift)
+    return jsonify(
+        plaintext=normalized_plaintext,
+        ciphertext=ciphertext,
+        shift=shift,
+        cipher_key=shift,
+    )
+
+
+@main.post("/api/decrypt-text")
+def decrypt_text_payload():
+    """Decrypt pasted or uploaded text with the existing Caesar cipher."""
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify(error="Request body must be a JSON object."), 400
+
+    filename_error = _validate_optional_filename(data)
+    if filename_error:
+        return filename_error
+
+    ciphertext = data.get("ciphertext")
+    if not isinstance(ciphertext, str):
+        return jsonify(error="Ciphertext must be a string."), 400
+
+    shift, error = _extract_shift(data)
+    if error:
+        return error
+
+    normalized_ciphertext = _remove_optional_text_label(ciphertext, "Ciphertext")
+    if not normalized_ciphertext.strip():
+        return jsonify(error="Ciphertext cannot be empty."), 400
+
+    decrypted_message = caesar_decrypt(normalized_ciphertext, shift)
+    return jsonify(
+        ciphertext=normalized_ciphertext,
+        decrypted_message=decrypted_message,
+        plaintext=decrypted_message,
         shift=shift,
         cipher_key=shift,
     )
