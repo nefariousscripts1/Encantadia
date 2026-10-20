@@ -4,6 +4,8 @@ GraphCrypt keeps route planning separate from route-file processing while preser
 
 The **Map** page computes the shortest path using the original graph weights, shows the explored search trace, applies the selected Caesar shift to the serialized route, and downloads an encrypted `.txt` file. The **Cipher** page has independent Encrypt and Decrypt sections for `.txt` route files. File encryption and decryption run only after the corresponding action button is pressed, and the shift key never influences A* or the route cost.
 
+The integrated **Algorithms** page adds a shared UTF-8 dataset workspace with manually implemented KMP pattern matching, byte-packed Huffman compression, memory-optimized 0/1 Knapsack selection, Randomized QuickSort ranking, and measured performance analysis. See [`docs/ALGORITHM_ANALYSIS.md`](docs/ALGORITHM_ANALYSIS.md) for the binary format, complexity analysis, safety limits, and reproducible evaluation procedure.
+
 ## System Architecture
 
 ```text

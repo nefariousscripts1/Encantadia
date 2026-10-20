@@ -64,8 +64,10 @@ const computationTableBody = document.querySelector("#computationTableBody");
 // Main page and Cipher subsection tabs
 const mapPageTab = document.querySelector("#mapPageTab");
 const cipherPageTab = document.querySelector("#cipherPageTab");
+const textPageTab = document.querySelector("#textPageTab");
 const mapPagePanel = document.querySelector("#mapPagePanel");
 const cipherPagePanel = document.querySelector("#cipherPagePanel");
+const textPagePanel = document.querySelector("#textPagePanel");
 const encryptTab = document.querySelector("#encryptTab");
 const decryptTab = document.querySelector("#decryptTab");
 const encryptPanel = document.querySelector("#encryptPanel");
@@ -1265,13 +1267,31 @@ function activateTab(activeTab, inactiveTab, activePanel, inactivePanel) {
     }
 }
 
+function deactivatePage(tab, panel) {
+    tab?.classList.remove("active");
+    tab?.setAttribute("aria-selected", "false");
+    tab?.setAttribute("tabindex", "-1");
+    if (panel) {
+        panel.classList.remove("active");
+        panel.hidden = true;
+        panel.classList.add("hidden");
+    }
+}
+
 function showMapPage() {
     activateTab(mapPageTab, cipherPageTab, mapPagePanel, cipherPagePanel);
+    deactivatePage(textPageTab, textPagePanel);
     window.requestAnimationFrame(drawScene);
 }
 
 function showCipherPage() {
     activateTab(cipherPageTab, mapPageTab, cipherPagePanel, mapPagePanel);
+    deactivatePage(textPageTab, textPagePanel);
+}
+
+function showTextPage() {
+    activateTab(textPageTab, mapPageTab, textPagePanel, mapPagePanel);
+    deactivatePage(cipherPageTab, cipherPagePanel);
 }
 
 function showEncryptPanel() {
@@ -1310,11 +1330,13 @@ resetButton?.addEventListener("click", () => reset());
 downloadRouteButton?.addEventListener("click", downloadRoute);
 mapPageTab?.addEventListener("click", showMapPage);
 cipherPageTab?.addEventListener("click", showCipherPage);
+textPageTab?.addEventListener("click", showTextPage);
 encryptTab?.addEventListener("click", showEncryptPanel);
 decryptTab?.addEventListener("click", showDecryptPanel);
-bindTabKeyboard([mapPageTab, cipherPageTab], (index) => {
+bindTabKeyboard([mapPageTab, cipherPageTab, textPageTab], (index) => {
     if (index === 0) showMapPage();
-    else showCipherPage();
+    else if (index === 1) showCipherPage();
+    else showTextPage();
 });
 bindTabKeyboard([encryptTab, decryptTab], (index) => {
     if (index === 0) showEncryptPanel();
@@ -1429,6 +1451,9 @@ canvas.addEventListener("click", (event) => {
 // Initialization
 showMapPage();
 showEncryptPanel();
+if (new URLSearchParams(window.location.search).get("workspace") === "text") {
+    showTextPage();
+}
 updateRangeFill(mapCipherKey, mapCipherKeyValue);
 updateRangeFill(encryptCipherKey, encryptCipherKeyValue);
 updateRangeFill(decryptCipherKey, decryptCipherKeyValue);

@@ -101,6 +101,20 @@
                 </svg>
                 <span>Cipher</span>
             </button>
+            <button
+                id="textPageTab"
+                class="page-tab"
+                type="button"
+                role="tab"
+                aria-selected="false"
+                aria-controls="textPagePanel"
+                tabindex="-1"
+            >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 4h16v16H4z"></path><path d="M8 8h8M8 12h5M8 16h8"></path>
+                </svg>
+                <span>Algorithms</span>
+            </button>
         </div>
     </nav>
 
@@ -595,8 +609,80 @@
                 </section>
             </div>
         </section>
+
+        <section id="textPagePanel" class="page-panel" role="tabpanel" aria-labelledby="textPageTab" tabindex="0" hidden>
+            <div class="text-lab-layout">
+                <aside class="flat-card dataset-panel" aria-labelledby="datasetHeading">
+                    <div class="lab-heading">
+                        <div><h2 id="datasetHeading">Text Dataset</h2><p>One source collection powers every algorithm.</p></div>
+                        <span id="datasetCount" class="badge badge-neutral">0 datasets</span>
+                    </div>
+                    <label class="field-stack" for="datasetName"><span>Dataset name</span><input id="datasetName" type="text" maxlength="80" value="manual-input.txt" autocomplete="off"></label>
+                    <label class="field-stack" for="textEditor"><span>UTF-8 text editor</span><textarea id="textEditor" rows="11" maxlength="1000000" placeholder="Paste or type text here…"></textarea></label>
+                    <p id="editorStats" class="inline-stats">0 characters · 0 bytes</p>
+                    <div class="dataset-actions">
+                        <button id="saveDatasetButton" class="lab-button lab-button-primary" type="button">Add Dataset</button>
+                        <button id="sampleDatasetButton" class="lab-button" type="button">Load Sample</button>
+                        <label class="lab-button file-button" for="textFileInput">Upload .txt</label>
+                        <input id="textFileInput" class="visually-hidden" type="file" accept=".txt,text/plain" multiple>
+                    </div>
+                    <div class="dataset-list-heading"><h3>Available datasets</h3><button id="clearDatasetsButton" class="text-button" type="button">Clear all</button></div>
+                    <div id="datasetList" class="dataset-list" aria-live="polite"><p class="empty-state">Add text, load the sample, or upload UTF-8 files.</p></div>
+                    <p id="datasetMessage" class="form-message" role="status" aria-live="polite"></p>
+                </aside>
+
+                <section class="flat-card algorithm-workbench" aria-labelledby="workbenchHeading">
+                    <div class="workbench-header"><div><h2 id="workbenchHeading">Algorithm Workbench</h2><p id="activeDatasetSummary">Select a dataset to begin analysis.</p></div><span id="labStatus" class="badge badge-neutral" aria-live="polite">Ready</span></div>
+                    <nav class="algorithm-tabs" role="tablist" aria-label="Text algorithms">
+                        <button id="kmpTab" class="lab-algorithm-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="kmpPanel" data-algorithm="kmpPanel">Pattern Matching</button>
+                        <button id="huffmanTab" class="lab-algorithm-tab" type="button" role="tab" aria-selected="false" aria-controls="huffmanPanel" data-algorithm="huffmanPanel" tabindex="-1">Compression</button>
+                        <button id="knapsackTab" class="lab-algorithm-tab" type="button" role="tab" aria-selected="false" aria-controls="knapsackPanel" data-algorithm="knapsackPanel" tabindex="-1">Optimization</button>
+                        <button id="rankingTab" class="lab-algorithm-tab" type="button" role="tab" aria-selected="false" aria-controls="rankingPanel" data-algorithm="rankingPanel" tabindex="-1">Randomized Sorting</button>
+                        <button id="performanceTab" class="lab-algorithm-tab" type="button" role="tab" aria-selected="false" aria-controls="performancePanel" data-algorithm="performancePanel" tabindex="-1">Performance</button>
+                    </nav>
+
+                    <div id="kmpPanel" class="algorithm-panel" role="tabpanel" aria-labelledby="kmpTab">
+                        <div class="algorithm-intro"><div><h3>Knuth–Morris–Pratt Search</h3><p>Builds an LPS table, then scans without backing up in the source text.</p></div><div class="complexity-badge"><span>Time O(n + m)</span><span>Space O(m)</span></div></div>
+                        <div class="run-strip"><label class="field-stack grow" for="kmpPattern"><span>Search pattern</span><input id="kmpPattern" type="text" placeholder="Enter keyword or pattern" autocomplete="off"></label><button id="runKmpButton" class="lab-button lab-button-primary" type="button">Run KMP</button></div>
+                        <div id="kmpMetrics" class="metric-strip" aria-live="polite"></div>
+                        <section class="result-block"><div class="result-heading"><h4>Matched preview</h4><span id="kmpPositions">No search run</span></div><div id="kmpPreview" class="text-preview empty-state">The selected dataset will appear here with every match highlighted.</div></section>
+                        <section class="result-block"><div class="result-heading"><h4>LPS table</h4></div><div id="lpsTable" class="table-wrap empty-state">Run KMP to inspect the prefix table.</div></section>
+                    </div>
+
+                    <div id="huffmanPanel" class="algorithm-panel" role="tabpanel" aria-labelledby="huffmanTab" hidden>
+                        <div class="algorithm-intro"><div><h3>Huffman Coding</h3><p>Encodes UTF-8 bytes into a real bit-packed payload with self-describing metadata.</p></div><div class="complexity-badge"><span>Time O(n + k log k)</span><span>Lossless</span></div></div>
+                        <div class="run-strip"><p class="algorithm-note grow">Total size includes the fixed header, frequency entries, payload, and padding.</p><button id="runHuffmanButton" class="lab-button lab-button-primary" type="button">Compress + Verify</button><button id="downloadHuffmanButton" class="lab-button" type="button" disabled>Download .gch</button><button id="decompressHuffmanButton" class="lab-button" type="button" disabled>Decompress Again</button></div>
+                        <div id="huffmanMetrics" class="metric-strip" aria-live="polite"></div><p id="huffmanVerification" class="verification-line">No compressed artifact yet.</p>
+                        <section class="result-block"><div class="result-heading"><h4>Frequency table and generated codes</h4><span>Byte-symbol strategy</span></div><div id="huffmanTable" class="table-wrap empty-state">Compress a dataset to build its Huffman tree.</div></section>
+                    </div>
+
+                    <div id="knapsackPanel" class="algorithm-panel" role="tabpanel" aria-labelledby="knapsackTab" hidden>
+                        <div class="algorithm-intro"><div><h3>0/1 Knapsack Optimization</h3><p>Selects the most valuable dataset combination under a processing budget. Every file is used at most once.</p></div><div class="complexity-badge"><span>Time O(N × B)</span><span>Space O(B)</span></div></div>
+                        <div class="run-strip"><label class="field-stack compact" for="knapsackBudget"><span>Budget (KiB units)</span><input id="knapsackBudget" type="number" min="0" max="100000" value="10"></label><p class="algorithm-note grow">Cost is one unit per started 1,024 UTF-8 bytes. Set each priority below.</p><button id="runKnapsackButton" class="lab-button lab-button-primary" type="button">Optimize Selection</button></div>
+                        <div id="knapsackMetrics" class="metric-strip" aria-live="polite"></div>
+                        <section class="result-block"><div class="result-heading"><h4>Dataset priorities</h4><span id="knapsackSelectionNote">No optimization run</span></div><div id="knapsackTable" class="table-wrap empty-state">Add datasets to assign priorities and processing costs.</div></section>
+                    </div>
+
+                    <div id="rankingPanel" class="algorithm-panel" role="tabpanel" aria-labelledby="rankingTab" hidden>
+                        <div class="algorithm-intro"><div><h3>KMP + Randomized QuickSort</h3><p>Searches every dataset, then ranks match counts with random pivots and deterministic ties.</p></div><div class="complexity-badge"><span>Average O(N log N)</span><span>Worst O(N²)</span></div></div>
+                        <div class="run-strip"><label class="field-stack grow" for="rankingPattern"><span>Search pattern</span><input id="rankingPattern" type="text" placeholder="Keyword across all datasets" autocomplete="off"></label><label class="field-stack compact" for="randomSeed"><span>Optional seed</span><input id="randomSeed" type="number" step="1" placeholder="e.g. 42"></label><button id="runRankingButton" class="lab-button lab-button-primary" type="button">Search + Rank</button></div>
+                        <div id="rankingMetrics" class="metric-strip" aria-live="polite"></div>
+                        <section class="result-block"><div class="result-heading"><h4>Ranked search results</h4><span>Descending matches · name tie-break</span></div><div id="rankingTable" class="table-wrap empty-state">Add multiple datasets, then search to compare them.</div></section>
+                    </div>
+
+                    <div id="performancePanel" class="algorithm-panel" role="tabpanel" aria-labelledby="performanceTab" hidden>
+                        <div class="algorithm-intro"><div><h3>Algorithm Performance</h3><p>Measures backend algorithm work with a monotonic clock, separate from network and interface rendering.</p></div><div class="complexity-badge"><span>Measured, not simulated</span><span>Python allocations</span></div></div>
+                        <div class="run-strip"><label class="field-stack grow" for="benchmarkSizes"><span>Dataset sizes (characters)</span><input id="benchmarkSizes" type="text" value="1000, 10000, 50000" inputmode="numeric"></label><button id="runBenchmarkButton" class="lab-button lab-button-primary" type="button">Run Benchmarks</button></div>
+                        <p class="algorithm-note">Theory describes growth as input scales; measured time also reflects data distribution, interpreter overhead, and the current machine. Peak memory covers traced Python allocations, not every native runtime byte.</p>
+                        <div id="benchmarkChart" class="benchmark-chart empty-state">Run the small, medium, and large samples to compare execution time.</div>
+                        <section class="result-block"><div class="result-heading"><h4>Benchmark evidence</h4><span id="benchmarkMethod">No benchmark run</span></div><div id="benchmarkTable" class="table-wrap empty-state">Results list status, timing, complexity, memory, and algorithm-specific output.</div></section>
+                    </div>
+                </section>
+            </div>
+        </section>
     </main>
 
     <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='js/text-lab.js') }}" defer></script>
 </body>
 </html>
